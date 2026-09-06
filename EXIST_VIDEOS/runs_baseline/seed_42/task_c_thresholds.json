@@ -1,0 +1,22 @@
+{
+  "thresholds": [
+    0.3,
+    0.3,
+    0.2,
+    0.25,
+    0.25,
+    0.25
+  ],
+  "scores": {
+    "ICM": -0.2946394142594454,
+    "ICMNorm": 0.4267091991997343
+  },
+  "label_order": [
+    "NONE",
+    "IDEOLOGICAL-INEQUALITY",
+    "MISOGYNY-NON-SEXUAL-VIOLENCE",
+    "SEXUAL-VIOLENCE",
+    "OBJECTIFICATION",
+    "STEREOTYPING-DOMINANCE"
+  ]
+}

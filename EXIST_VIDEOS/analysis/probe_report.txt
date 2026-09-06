@@ -1,0 +1,1777 @@
+[log] stdout duplicado para analysis/probe_report.txt 
+[log] stderr NAO e capturado — se houver traceback, copiar da tela
+[fix ARCH-01] q_bias/v_bias restaurados em 12 camadas do VideoMAE
+[load_run] run_B2_bio_viewer_seed42_B15 carregado | condição: use_bio=True, use_viewer_emb=True | 587 pesos congelados vindos dos backbones
+
+meta do checkpoint sondado:
+  condition          B2_bio_viewer
+  arm                B15
+  restore_biases     True
+  frames_version     v2
+  audio_version      v2
+  num_train_epochs   15
+  fusion_in          2688
+  split_seed         42
+[split] carregado de Dataset/val_split_42.json (seed=42, estratificação=task_a): 2019 treino / 505 val
+
+val = 505 amostras (split congelado seed 42)
+[cache] carregado de analysis/probe_cache_B15/val_cache.pt (forward saltado)
+shapes OK: {'fusion_in': (505, 2688), 'logits_a': (505,), 'logits_b': (505, 3), 'logits_c': (505, 6), 'labels_a': (505,), 'labels_b': (505, 3), 'labels_c': (505, 6), 'pool_stats': (505, 3), 'pool_temporal': (505, 8)}
+model.training = False (tem de ser False)
+
+      modo    maxD logit  flips argmax B  flips A@0.5
+  bs2+bf16     0.000e+00               0            0
+  bs2+fp32     3.815e-02               1            0
+ bs64+bf16     6.250e-02               1            0
+ bs64+fp32     3.815e-02               1            0
+
+modo escolhido: bs2+bf16  (bs=2, autocast_bf16=True)
+>>> PORTAO A OK: o replay reproduz as decisoes do forward completo.
+2026-08-12 22:57:12,166 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:12,209 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:12,324 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:12,326 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:12,436 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:12,548 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:12,660 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:12,746 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:13,047 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:13,049 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:13,324 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:13,594 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:13,707 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:13,744 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:13,853 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:13,855 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:13,969 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:14,080 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:14,190 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:14,279 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:14,576 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:14,578 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:14,879 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:15,179 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:15,305 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:57:15,416 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:15,786 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:15,788 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:16,165 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:16,548 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:16,604 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:16,752 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:16,753 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:16,900 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:17,034 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:17,339 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:17,378 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:17,494 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:17,497 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:17,616 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:17,737 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:17,847 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:17,932 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:18,208 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:18,209 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:18,485 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:18,756 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:18,866 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:18,904 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:19,027 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:19,029 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:19,150 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:19,269 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:19,386 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:19,480 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:19,794 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:19,796 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:20,671 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:20,979 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:21,107 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:57:21,223 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:21,607 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:21,609 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:22,003 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:22,382 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:22,439 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:22,576 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:22,578 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:22,725 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:22,869 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+
+metrica                          forward    replay  final_metrics  D repl-fwd  D fwd-final
+task_a_icmnorm_hard               0.5536    0.5536         0.5536    +0.00000     +0.00000
+task_a_icmsoftnorm_soft           0.5058    0.5058         0.5058    +0.00000     +0.00000
+task_b_icmnorm_hard               0.4968    0.4968         0.4968    +0.00000     +0.00000
+task_b_icmsoftnorm_soft           0.3947    0.3947         0.3947    +0.00000     +0.00000
+task_c_icmnorm_hard               0.3436    0.3436         0.3436    +0.00000     -0.00000
+task_c_icmsoftnorm_soft           0.1514    0.1514         0.1514    +0.00000     +0.00000
+
+2026-08-12 22:57:23,181 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:23,220 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:23,339 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:23,341 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:23,457 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:23,575 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:23,684 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:23,769 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:24,072 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:24,074 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:24,350 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:24,623 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:24,745 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:24,783 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:24,903 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:24,905 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:25,025 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:25,145 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:25,267 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:25,359 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:25,679 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:25,681 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:25,994 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:26,293 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:26,418 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:57:26,532 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:26,900 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:26,901 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:27,261 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:28,186 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:28,243 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:28,384 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:28,386 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:28,525 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:28,666 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+shuf0  task_b_icmnorm_hard  replay=0.4106  test.ipynb=0.4106  D=-0.00001
+2026-08-12 22:57:28,969 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:29,007 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:29,125 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:29,128 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:29,239 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:29,349 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:29,466 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:29,551 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:29,838 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:29,840 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:30,118 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:30,394 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:30,516 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:30,554 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:30,669 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:30,671 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:30,788 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:30,904 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:31,015 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:31,107 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:31,410 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:31,411 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:31,717 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:32,024 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:32,146 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:57:32,259 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:32,637 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:32,639 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:33,029 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:33,406 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:33,463 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:33,598 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:33,599 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:33,753 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:33,905 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+shuf1  task_b_icmnorm_hard  replay=0.4316  test.ipynb=0.4316  D=+0.00003
+
+>>> PORTOES B e C OK: esta sessao reproduz a run de origem. Valores ABSOLUTOS comparaveis com o doc 15.
+amostras com voto válido em B: 505 de 505
+
+ordem das classes: ['NONE', 'JUDGEMENTAL', 'DIRECT'] 
+
+       gold|pred            NONE     JUDGEMENTAL          DIRECT   total
+            NONE             210              21              37     268
+     JUDGEMENTAL              23              52              17      92
+          DIRECT              61              16              68     145
+           total             294              89             122     505
+
+LEITURA:
+  As 3 classes aparecem no argmax — o eixo DIRECT↔JUDGEMENTAL É alcançável,
+  logo o mecanismo da H1 permanece na mesa. O NaN do fmeasure vem de outro
+  motivo (interno ao PyEvALL), não de classe nunca predita.
+
+  (referência: eval_proxy_task_b_f1 = 0.6104, eval_task_b_fmeasure_hard = nan)
+grupos para permutação within-class (gold hard de B; -1 = sem voto válido):
+              NONE  n=268
+       JUDGEMENTAL  n=92
+            DIRECT  n=145
+2026-08-12 22:57:34,377 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:34,418 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:34,537 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:34,538 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:34,671 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:34,802 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:34,927 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:35,013 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:35,302 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:35,303 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:36,137 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:36,431 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:36,570 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:36,608 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:36,741 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:36,743 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:36,867 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:36,988 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:37,104 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:37,200 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:37,518 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:37,520 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:37,827 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:38,127 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:38,261 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:57:38,379 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:38,769 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:38,771 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:39,147 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:39,525 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:39,581 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:39,733 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:39,734 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:39,869 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:40,003 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:40,316 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:40,355 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:40,474 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:40,476 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:40,592 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:40,708 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:40,817 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:40,904 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:41,192 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:41,194 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:41,476 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:41,754 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:41,874 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:41,912 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:42,026 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:42,027 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:42,144 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:42,257 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:42,383 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:42,476 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:43,278 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:43,279 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:43,583 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:43,891 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:44,015 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:57:44,129 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:44,525 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:44,527 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:44,922 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:45,291 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:45,348 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:45,486 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:45,488 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:45,633 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:45,778 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:46,083 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:46,122 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:46,244 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:46,246 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:46,367 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:46,498 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:46,611 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:46,698 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:46,983 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:46,984 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:47,272 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:47,549 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:47,670 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:47,707 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:47,816 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:47,817 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:47,936 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:48,051 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:48,162 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:48,256 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:48,556 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:48,558 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:48,851 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:49,673 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:49,797 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:57:49,909 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:50,283 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:50,284 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:50,651 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:51,040 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:51,096 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:51,241 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:51,242 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:51,382 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:51,520 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:51,824 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:51,861 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:51,973 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:51,974 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:52,092 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:52,209 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:52,327 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:52,414 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:52,712 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:52,714 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:53,008 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:53,302 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:53,427 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:53,466 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:53,594 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:53,596 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:53,712 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:53,817 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:53,926 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:54,042 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:54,355 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:54,357 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:54,666 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:55,471 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:55,604 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:57:55,715 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:56,085 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:56,087 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:56,454 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:56,840 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:56,897 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:57,041 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:57,043 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:57,185 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:57,319 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:57,618 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:57,662 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:57,781 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:57,783 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:57,901 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:58,018 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:58,130 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:58,217 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:58,506 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:57:58,508 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:58,791 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:57:59,060 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:57:59,187 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:57:59,225 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:59,342 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:57:59,344 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:59,460 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:57:59,576 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:57:59,695 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:57:59,788 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:00,095 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:00,096 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:00,397 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:00,718 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:00,853 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:58:00,969 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:01,351 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:01,353 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:01,732 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:02,657 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:02,715 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:02,848 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:02,849 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:02,995 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:03,139 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:03,454 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:03,494 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:03,610 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:03,612 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:03,731 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:03,850 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:03,958 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:04,049 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:04,350 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:04,352 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:04,635 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:04,931 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:05,055 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:05,094 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:05,216 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:05,219 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:05,341 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:05,459 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:05,572 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:05,670 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:05,987 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:05,988 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:06,319 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:06,622 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:06,742 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:58:06,857 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:07,234 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:07,236 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:07,616 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:07,991 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:08,049 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:08,200 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:08,202 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:08,350 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:08,483 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:08,796 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:08,836 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:08,954 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:08,955 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:09,067 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:09,186 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:09,295 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:09,382 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:09,670 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:09,671 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:09,948 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:10,740 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:10,868 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:10,907 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:11,028 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:11,030 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:11,156 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:11,276 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:11,391 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:11,489 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:11,797 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:11,799 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:12,094 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:12,391 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:12,521 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:58:12,634 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:13,024 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:13,026 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:13,397 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:13,772 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:13,829 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:13,975 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:13,977 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:14,108 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:14,247 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:14,551 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:14,591 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:14,712 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:14,714 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:14,836 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:14,953 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:15,070 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:15,155 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:15,438 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:15,440 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:15,714 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:15,991 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:16,109 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:16,147 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:16,257 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:16,259 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:16,369 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:16,477 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:16,587 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:16,678 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:16,981 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:16,983 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:17,844 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:18,147 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:18,266 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:58:18,378 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:18,752 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:18,754 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:19,143 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:19,517 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:19,574 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:19,721 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:19,722 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:19,871 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:20,014 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:20,317 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:20,355 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:20,474 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:20,476 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:20,595 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:20,714 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:20,835 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:20,920 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:21,207 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:21,209 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:21,506 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:21,810 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:21,928 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:21,966 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:22,086 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:22,088 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:22,209 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:22,326 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:22,436 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:22,526 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:22,830 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:22,831 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:23,132 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:23,453 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:23,587 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:58:23,700 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:24,085 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:24,087 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:24,477 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:25,387 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:25,444 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:25,591 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:25,593 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:25,737 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:25,884 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:26,185 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:26,223 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:26,334 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:26,336 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:26,455 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:26,569 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:26,675 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:26,759 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:27,054 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:27,056 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:27,338 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:27,609 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:27,732 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:27,770 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:27,885 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:27,887 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:28,005 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:28,111 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:28,230 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:28,323 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:28,632 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:28,634 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:28,960 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:29,262 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:29,393 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:58:29,504 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:29,875 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:29,877 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:30,257 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:30,672 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:30,729 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:30,874 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:30,876 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:31,014 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:31,159 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+
+amostras sem par no grupo (ficaram fixas no arm within): 0
+‖Δvid_feat‖ médio — across=13.154  within=13.119
+2026-08-12 22:58:31,478 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:31,517 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:31,635 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:31,638 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:31,756 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:31,873 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:31,981 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:32,066 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:32,828 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:32,830 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:33,109 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:33,385 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:33,509 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:33,547 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:33,671 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:33,673 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:33,793 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:33,910 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:34,017 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:34,111 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:34,425 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:34,427 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:34,735 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:35,045 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:35,167 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:58:35,280 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:35,648 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:35,649 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:36,015 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:36,374 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:36,430 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:36,570 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:36,572 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:36,713 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:36,844 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:37,154 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:37,192 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:37,301 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:37,302 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:37,412 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:37,524 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:37,637 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:37,723 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:37,996 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:37,998 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:38,269 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:38,957 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:39,081 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:39,120 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:39,237 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:39,238 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:39,350 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:39,461 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:39,571 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:39,665 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:39,966 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:39,968 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:40,259 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:40,551 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:40,681 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:58:40,796 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:41,162 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:41,164 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:41,529 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:41,892 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:41,948 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:42,087 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:42,089 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:42,240 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:42,382 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:42,701 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:42,742 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:42,866 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:42,868 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:42,988 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:43,107 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:43,218 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:43,305 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:43,605 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:43,607 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:43,903 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:44,187 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:44,314 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:44,352 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:44,476 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:44,478 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:44,601 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:44,719 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:44,850 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:44,945 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:45,259 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:45,260 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:45,570 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:46,454 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:46,592 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:58:46,705 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:47,091 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:47,093 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:47,483 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:47,863 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:47,919 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:48,067 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:48,069 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:48,216 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:48,382 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:48,704 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:48,743 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:48,862 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:48,864 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:48,984 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:49,106 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:49,218 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:49,305 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:49,611 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:49,613 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:49,904 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:50,189 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:50,302 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:50,340 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:50,469 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:50,471 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:50,590 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:50,705 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:50,815 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:50,908 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:51,230 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:51,232 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:51,542 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:51,862 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:51,995 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:58:52,110 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:52,505 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:52,507 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:53,344 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:53,732 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:53,791 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:53,932 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:53,933 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:54,072 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:54,218 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:54,533 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:54,573 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:54,688 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:54,690 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:54,805 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:54,910 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:55,030 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:55,116 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:55,399 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:55,400 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:55,687 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:55,989 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:56,105 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:56,144 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:56,265 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:56,266 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:56,387 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:56,493 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:58:56,603 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:58:56,696 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:57,005 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:57,007 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:57,319 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:57,615 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:58:57,740 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:58:57,854 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:58,692 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:58:58,694 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:59,072 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:58:59,458 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:58:59,515 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:59,660 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:58:59,662 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:59,807 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:58:59,951 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:00,263 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:00,302 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:00,421 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:00,423 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:00,543 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:00,659 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:00,767 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:00,853 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:01,148 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:01,150 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:01,440 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:01,728 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:01,852 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:01,889 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:02,009 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:02,011 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:02,124 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:02,244 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:02,363 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:02,456 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:02,783 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:02,785 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:03,090 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:03,379 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:03,499 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:59:03,612 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:03,985 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:03,986 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:04,371 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:04,739 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:04,798 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:04,929 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:04,931 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:05,068 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:05,212 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:05,531 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:05,569 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:05,688 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:05,691 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:05,810 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:05,928 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:06,036 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:06,122 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:06,413 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:06,415 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:07,185 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:07,480 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:07,600 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:07,639 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:07,759 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:07,760 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:07,881 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:08,000 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:08,124 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:08,216 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:08,546 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:08,548 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:08,858 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:09,159 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:09,290 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:59:09,403 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:09,788 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:09,790 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:10,185 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:10,560 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:10,616 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:10,762 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:10,766 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:10,910 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:11,049 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:11,358 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:11,397 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:11,517 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:11,519 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:11,645 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:11,763 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:11,881 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:11,967 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:12,269 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:12,271 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:12,592 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:12,886 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:13,006 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:13,044 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:13,154 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:13,156 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:13,268 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:13,379 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:13,491 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:13,584 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:14,438 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:14,439 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:14,735 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:15,027 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:15,154 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:59:15,267 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:15,628 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:15,630 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:15,993 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:16,355 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:16,411 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:16,550 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:16,552 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:16,692 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:16,830 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:17,190 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:17,230 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:17,335 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:17,337 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:17,447 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:17,553 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:17,659 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:17,743 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:18,017 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:18,019 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:18,286 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:18,552 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:18,669 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:18,707 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:18,820 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:18,822 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:18,936 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:19,050 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:19,177 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:19,270 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:19,583 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:19,585 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:19,892 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:20,669 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:20,787 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:59:20,898 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:21,286 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:21,288 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:21,672 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:22,047 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:22,103 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:22,234 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:22,236 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:22,384 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:22,546 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:22,863 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:22,902 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:23,008 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:23,010 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:23,129 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:23,244 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:23,359 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:23,444 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:23,748 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:23,749 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:24,030 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:24,315 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:24,437 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:24,474 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:24,596 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:24,599 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:24,721 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:24,840 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:24,963 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:25,055 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:25,378 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:25,379 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:25,684 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:25,979 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:26,105 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:59:26,216 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:26,590 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:26,592 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:26,959 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:27,330 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:27,387 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:27,528 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:27,530 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:27,678 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:27,832 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+
+           arm      ‖Δ‖          a_hard          a_soft          b_hard          b_soft          c_hard          c_soft
+        normal    0.000          0.5536          0.5058          0.4968          0.3947          0.3436          0.1514
+   perm_across   13.154    -0.0079±0.009    -0.0225±0.014    -0.0631±0.050    -0.0527±0.025    +0.0032±0.015    -0.0086±0.019
+  noise_across   13.154    -0.0035±0.039    -0.0079±0.025    -0.0353±0.048    -0.0136±0.031    +0.0016±0.019    -0.0071±0.019
+   perm_within   13.119    +0.0152±0.021    +0.0012±0.015    -0.0002±0.021    -0.0041±0.008    +0.0210±0.014    -0.0045±0.015
+  noise_within   13.119    -0.0231±0.050    -0.0138±0.025    -0.0423±0.046    -0.0196±0.026    -0.0071±0.041    -0.0071±0.012
+
+(cada célula: Δ médio vs normal ± amplitude sobre os 5 derangements/seeds)
+
+LEITURA (Task B ICMNorm hard) — arvore CORRIGIDA em 2026-08-09.
+A versao anterior desta celula so comparava noise_across vs perm_across e
+retornava antes de consultar os arms within. Rotulava 'indistinguivel' como
+'CONFIRMA H3' e ignorava os dois arms que existiam justamente para discriminar.
+Nao e violacao de pre-registro: a regra estava incompleta e assimetrica.
+
+  perm_across    D=-0.0631 +-0.0501   ||Dvid_feat||=13.154
+  noise_across   D=-0.0353 +-0.0484   ||Dvid_feat||=13.154
+  perm_within    D=-0.0002 +-0.0207   ||Dvid_feat||=13.119
+  noise_within   D=-0.0423 +-0.0465   ||Dvid_feat||=13.119
+  tolerancia pre-registada = 0.0501
+
+  [1] perm_within vs perm_across: |-0.0002 - -0.0631| = 0.0629 > tol
+      REFUTA H3 na forma forte. As duas permutacoes tem ||D|| praticamente
+      igual e a unica coisa que difere entre elas e a CLASSE GOLD DE B DO
+      DOADOR — que o modelo nunca ve. Uma cabeca genericamente fragil nao
+      pode dar dano ~zero sob uma perturbacao dessa magnitude.
+      CONFIRMA o mecanismo da H1: o que o slot de video carrega e informacao
+      de classe de B (registro/formato da fonte).
+      E MAIS: dano ~zero dentro da classe significa que o slot de video NAO
+      carrega nada ALEM da classe de B. Se carregasse intensidade, categoria
+      de C ou detalhe de enquadramento, trocar dentro da classe custaria
+      algo. O ramo de video funciona como um classificador fraco de
+      intencao da fonte, e nada mais. E uma afirmacao de TETO.
+
+  [2] perm_within vs noise_within (||D|| casada): |-0.0002 - -0.0423| = 0.0421 <= tol
+      Abaixo da tolerancia — mesma direcao de [1], mas nao sustenta sozinho.
+
+  [3] perm_across vs noise_across (o teste da §5 do doc 15): |-0.0631 - -0.0353| = 0.0278 <= tol
+      SEM PODER a n=505. Isso NAO confirma H3 — 'indistinguivel' nao e
+      'confirmado'. Nota metodologica para a tese: ruido isotropico era o
+      controle ERRADO; quem discrimina e permutacao condicional a classe com
+      magnitude casada.
+
+  CAVEAT do desenho: perm_within agrupa pelo GOLD de B, logo o arm e oracular
+  na CONSTRUCAO. E legitimo — o gold escolhe o doador, nunca entra no modelo —
+  mas tem de ser declarado antes que alguem levante.
+
+  CORRECAO DE NUMERO: com 5 derangements, perm_across da -0.0631 +-0.0501.
+  O -0,076 do doc 15 (2 seeds) era um ponto fragil: a amplitude e da ordem do
+  proprio efeito. Reportar SEMPRE com a amplitude, nunca como valor pontual.
+
+  Nenhum destes numeros e evidencia de que o video AJUDA (video_core.py:1069).
+2026-08-12 22:59:28,243 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:28,283 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:28,404 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:28,406 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:28,526 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:28,645 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:28,756 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:28,845 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:29,573 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:29,575 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:29,861 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:30,147 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:30,273 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:30,312 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:30,435 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:30,437 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:30,556 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:30,674 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:30,787 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:30,881 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:31,194 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:31,196 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:31,525 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:31,826 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:31,982 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:59:32,093 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:32,480 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:32,482 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:32,867 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:33,242 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:33,298 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:33,443 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:33,445 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:33,591 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:33,735 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:34,046 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:34,089 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:34,209 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:34,211 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:34,331 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:34,449 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:34,574 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:34,662 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:34,960 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:34,962 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:35,278 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:36,122 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:36,239 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:36,278 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:36,398 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:36,399 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:36,519 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:36,636 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:36,747 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:36,839 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:37,158 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:37,160 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:37,464 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:37,765 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:37,881 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:59:37,994 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:38,382 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:38,385 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:38,772 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:39,161 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:39,218 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:39,365 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:39,366 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:39,507 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:39,646 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:39,948 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:39,986 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:40,105 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:40,107 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:40,230 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:40,343 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:40,451 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:40,540 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:40,834 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:40,836 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:41,135 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:41,416 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:41,535 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:41,572 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:41,682 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:41,684 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:41,804 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:41,921 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:42,030 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:42,123 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:42,429 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:42,431 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:42,747 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:43,503 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:43,636 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:59:43,748 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:44,118 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:44,120 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:44,500 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:44,865 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:44,922 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:45,062 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:45,064 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:45,210 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:45,370 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:45,715 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:45,754 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:45,871 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:45,874 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:45,994 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:46,110 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:46,219 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:46,303 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:46,580 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:46,582 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:46,863 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:47,127 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:47,249 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:47,286 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:47,417 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:47,420 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:47,538 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:47,655 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:47,765 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:47,855 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:48,176 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:48,178 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:48,470 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:48,775 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:48,902 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:59:49,012 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:49,367 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:49,368 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:49,760 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:50,147 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:50,204 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:50,333 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:50,337 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:50,475 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:50,613 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:50,915 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:50,953 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:51,063 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:51,065 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:51,183 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:51,298 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:51,408 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:51,494 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:52,101 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:52,103 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:52,391 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:52,665 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:52,785 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:52,822 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:52,941 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:52,943 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:53,053 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:53,162 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:53,271 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:53,361 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:53,682 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:53,683 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:53,987 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:54,283 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:54,415 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 22:59:54,527 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:54,917 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:54,919 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:55,284 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:55,659 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:55,715 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:55,848 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:55,849 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:55,994 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:56,129 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:56,436 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:56,475 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:56,605 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:56,608 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:56,725 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:56,843 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:56,950 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:57,034 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:57,323 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:57,324 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:58,107 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:58,392 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 22:59:58,511 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 22:59:58,549 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:58,670 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 22:59:58,672 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:58,792 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 22:59:58,909 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 22:59:59,022 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 22:59:59,114 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:59,428 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 22:59:59,430 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 22:59:59,752 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:00,050 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:00,183 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 23:00:00,298 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:00,693 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:00,695 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:01,092 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:01,468 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:01,524 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:01,671 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:01,673 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:01,816 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:01,952 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:02,266 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:02,304 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:02,423 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:02,425 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:02,542 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:02,661 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:02,769 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:02,852 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:03,140 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:03,142 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:03,423 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:03,701 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:03,824 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:03,862 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:03,978 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:03,980 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:04,101 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:04,220 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:04,331 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:04,425 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:04,732 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:04,734 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:05,558 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:05,862 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:05,996 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 23:00:06,111 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:06,507 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:06,509 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:06,898 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:07,270 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:07,326 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:07,463 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:07,465 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:07,611 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:07,756 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:08,060 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:08,099 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:08,219 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:08,221 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:08,346 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:08,466 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:08,583 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:08,672 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:08,961 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:08,963 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:09,249 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:09,537 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:09,649 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:09,686 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:09,802 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:09,805 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:09,926 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:10,043 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:10,154 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:10,246 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:10,552 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:10,554 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:10,864 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:11,166 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:11,300 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 23:00:11,415 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:12,265 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:12,267 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:12,648 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:13,041 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:13,097 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:13,243 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:13,245 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:13,392 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:13,533 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:13,845 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:13,884 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:14,006 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:14,008 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:14,128 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:14,246 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:14,368 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:14,455 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:14,768 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:14,769 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:15,052 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:15,356 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:15,481 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:15,518 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:15,641 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:15,643 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:15,763 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:15,881 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:15,992 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:16,084 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:16,392 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:16,394 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:16,709 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:17,020 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:17,155 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 23:00:17,269 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:17,653 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:17,655 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:18,489 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:18,861 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:18,918 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:19,066 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:19,068 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:19,212 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:19,357 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:19,702 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:19,740 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:19,861 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:19,863 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:19,984 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:20,103 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:20,226 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:20,311 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:20,600 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:20,602 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:20,887 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:21,169 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:21,293 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:21,333 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:21,454 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:21,456 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:21,577 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:21,689 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:21,810 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:21,903 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:22,207 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:22,209 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:22,524 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:22,833 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:22,954 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 23:00:23,066 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:23,428 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:23,430 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:24,268 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:24,643 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:24,699 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:24,851 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:24,852 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:24,988 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:25,130 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:25,437 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:25,475 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:25,580 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:25,582 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:25,699 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:25,817 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:25,924 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:26,009 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:26,293 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:26,295 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:26,594 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:26,876 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:27,001 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:27,038 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:27,149 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:27,150 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:27,270 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:27,386 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:27,507 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:27,598 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:27,903 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:27,905 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:28,208 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:28,529 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:28,652 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 23:00:28,762 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:29,143 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:29,144 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:29,526 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:29,913 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:29,970 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:30,112 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:30,115 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:30,246 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:30,392 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:30,696 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:30,734 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:30,852 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:30,854 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:30,973 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:31,091 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:31,201 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:31,286 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:31,587 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:31,589 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:31,865 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:32,702 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:32,827 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:32,866 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:32,986 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:32,987 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:33,104 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:33,221 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:33,344 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:33,434 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:33,753 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:33,756 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:34,072 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:34,376 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:34,509 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 23:00:34,624 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:35,000 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:35,001 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:35,375 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:35,743 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:35,800 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:35,932 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:35,933 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:36,073 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:36,211 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:36,515 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:36,553 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:36,672 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:36,674 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:36,792 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:36,910 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:37,020 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:37,104 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:37,385 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:37,387 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:37,672 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:37,951 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:38,075 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:38,113 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:38,234 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:38,237 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:38,358 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:38,476 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:38,601 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:38,694 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:39,006 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:39,008 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:39,868 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:40,180 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:40,312 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 23:00:40,429 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:40,839 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:40,841 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:41,224 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:41,599 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:41,656 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:41,789 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:41,791 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:41,954 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:42,093 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:42,396 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:42,434 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:42,547 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:42,548 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:42,658 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:42,767 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:42,874 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:42,959 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:43,237 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:43,238 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:43,515 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:43,795 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:43,915 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:43,953 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:44,074 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:44,075 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:44,186 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:44,298 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:44,414 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:44,510 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:44,809 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:44,810 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:45,115 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:45,402 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:45,526 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 23:00:45,641 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:46,009 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:46,010 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:46,374 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:47,323 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:47,382 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:47,527 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:47,528 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:47,675 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:47,819 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:48,114 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:48,152 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:48,256 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:48,258 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:48,372 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:48,484 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:48,605 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:48,690 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:48,998 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:49,000 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:49,279 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:49,554 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:49,666 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:49,704 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:49,818 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:49,819 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:49,936 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:50,050 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+2026-08-12 23:00:50,171 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+2026-08-12 23:00:50,260 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:50,573 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:50,575 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:50,876 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:51,170 - pyevall.metrics.metrics - INFO -             evaluate() - Executing Cross Entropy evaluation method
+2026-08-12 23:00:51,300 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICMSoft', 'ICMSoftNorm']
+2026-08-12 23:00:51,413 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:51,798 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM-Soft Normalized evaluation method
+2026-08-12 23:00:51,800 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:52,160 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Soft evaluation method
+2026-08-12 23:00:52,533 - pyevall.evaluation - INFO -             evaluate() - Evaluating the following metrics ['ICM', 'ICMNorm', 'FMeasure']
+2026-08-12 23:00:52,590 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:52,719 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM Normalized evaluation method
+2026-08-12 23:00:52,723 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:52,868 - pyevall.metrics.metrics - INFO -             evaluate() - Executing ICM evaluation method
+2026-08-12 23:00:53,007 - pyevall.metrics.metrics - INFO -             evaluate() - Executing fmeasure evaluation method
+    slot   dim      ‖Δ‖       a_H_hard       a_S_soft       b_H_hard       b_S_soft       c_H_hard       c_S_soft
+  normal          0.000         0.5536         0.5058         0.4968         0.3947         0.3436         0.1514
+   video   768   13.154   -0.0079±0.009   -0.0225±0.014   -0.0631±0.050   -0.0527±0.025   +0.0032±0.015   -0.0086±0.019
+   audio   768   13.066   -0.0120±0.030   -0.0143±0.017   -0.0574±0.044   -0.0417±0.024   -0.0098±0.028   -0.0207±0.033
+   texto  1024   18.596   -0.2313±0.069   -0.1985±0.042   -0.2541±0.051   -0.1921±0.023   -0.2160±0.039   -0.1514±0.000
+     bio   128    2.820   -0.0078±0.027   -0.0051±0.006   -0.0207±0.013   -0.0092±0.007   -0.0022±0.022   +0.0027±0.011
+
+(Δ médio vs normal ± amplitude sobre 5 derangements; ‖Δ‖ = perturbação aplicada ao slot)
+
+LEITURA:
+  task_a_icmnorm_hard        hierarquia (mais nocivo → menos): texto(-0.231) > audio(-0.012) > video(-0.008) > bio(-0.008)
+  task_b_icmnorm_hard        hierarquia (mais nocivo → menos): texto(-0.254) > video(-0.063) > audio(-0.057) > bio(-0.021)
+  task_c_icmnorm_hard        hierarquia (mais nocivo → menos): texto(-0.216) > audio(-0.010) > bio(-0.002) > video(+0.003)
+
+  CONFIRMA H1 (parte 1): o texto domina a Task A por larga margem. A
+  contribuição pequena do vídeo em A é PROPORCIONAL, não anômala — o conteúdo
+  sexista chega pela transcrição.
+  ⚠ Estes Δ medem DEPENDÊNCIA do modelo treinado, não teto de informação da
+     modalidade. Um ramo que o treino aprendeu a ignorar dá Δ≈0 mesmo que a
+     modalidade contenha sinal.
+    slot   dim   ‖feat‖ méd   ‖feat‖ med   ‖col W‖ méd   ‖W·feat‖ méd  % da soma
+   video   768       15.632       15.579        0.7492         18.840      18.3%
+   audio   768       23.174       23.084        0.4351         27.242      26.5%
+   texto  1024       31.126       31.127        0.6298         53.686      52.2%
+     bio   128        1.888        1.598        0.5036          3.091       3.0%
+    bias                                                        0.480
+
+LEITURA (fecha o caveat da §3.4 do doc 15):
+  CORRIGE §3.4: a norma de coluna maior do vídeo é enganosa. Em peso×escala o
+  vídeo contribui menos da metade do texto — a leitura 'a fusão dá ao vídeo
+  peso nominal maior que ao texto' NÃO deve ir para a tese sem esta ressalva.
+  ⚠ Descritivo, não causal (bias + GELU a jusante).
+    slot    ‖média‖      ‖std‖   std/média   cos médio   cos p05   cos p95
+   video     12.499      9.458       0.757       0.640     0.431     0.811
+   audio     21.070      9.663       0.459       0.825     0.648     0.950
+   texto     28.028     13.550       0.483       0.805     0.630     0.925
+     bio      0.926      2.326       2.512       0.101    -0.456     0.815
+
+LEITURA:
+  REFUTA a forma forte da H2: std/média = 0.757 — o vid_feat varia entre
+  amostras. O encoder distingue os vídeos; a questão é se o que distingue é
+  semântica de sexismo ou propriedade de captura (→ teste 4).
+entropia uniforme ln(1568) = 7.358 nats  ->  1568 tokens efetivos
+
+           estatística     média   mediana       p05       p95
+       entropia (nats)     1.591     1.599     0.352     2.941
+tokens efetivos exp(H)     6.794     4.950     1.422    18.938
+           peso máximo     0.531     0.502     0.207     0.935
+       massa do top-10     0.941     0.970     0.775     0.999
+
+perfil temporal médio (massa de atenção por posição temporal, [SUPOSIÇÃO] reshape):
+  t0=0.095  t1=0.232  t2=0.127  t3=0.032  t4=0.051  t5=0.164  t6=0.057  t7=0.243
+  desvio-padrão ENTRE amostras do perfil: 0.2480
+  (uniforme seria 0.125 em cada posição)
+
+LEITURA:
+  CONFIRMA colapso para POUCOS TOKENS: 5 tokens efetivos — o
+  'vídeo' que chega à fusão é um punhado de patches espaço-temporais.
+  CORREÇÃO PARA A TESE (independente de tudo acima): o softmax roda sobre os 1568
+  tokens espaço-temporais, não sobre posições temporais. O pool NÃO é temporal.
+‖Δhidden‖ média por bloco de 196 tokens (frames 0-1 trocados):
+  bloco 0:  16.4362  ########################################
+  bloco 1:   2.4150  #####
+  bloco 2:   1.6511  ####
+  bloco 3:   1.2542  ###
+  bloco 4:   1.2099  ##
+  bloco 5:   1.5133  ###
+  bloco 6:   1.1803  ##
+  bloco 7:   1.3509  ###
+
+razão bloco0 / média dos outros = 10.88×
+
+LEITURA:
+  SUSTENTA a suposição de reshape: a troca do primeiro tubelet concentra-se no
+  bloco 0. A ordem de flatten é (t, h, w) com t mais externo, e o perfil
+  temporal da célula 5.3 pode ser lido.
+metades (vc.split_val_halves): fit=252  report=253
+
+distribuição dos alvos:
+  A_hard (sexista?)      {0: 261, 1: 244}
+  B_hard (3 classes)     {0: 268, 1: 92, 2: 145}
+  língua (es vs en)      {0: 222, 1: 283}
+  duração > mediana      {0: 254, 1: 251}
+
+                  alvo                     video                     texto                     audio                       bio
+                                  AUC (AUC−nulo)            AUC (AUC−nulo)            AUC (AUC−nulo)            AUC (AUC−nulo)
+     A_hard (sexista?)           0.546 (+0.050)           0.716 (+0.212)           0.584 (+0.083)           0.537 (+0.043)
+    B_hard (3 classes)           0.560 (+0.069)           0.699 (+0.189)           0.629 (+0.133)           0.560 (+0.066)
+     língua (es vs en)           0.447 (-0.076)           0.972 (+0.466)           0.939 (+0.424)           0.915 (+0.411)
+     duração > mediana           0.620 (+0.117)           0.820 (+0.323)           0.985 (+0.494)           0.863 (+0.361)
+
+LEITURA (sonda sobre video):
+  ganho sobre o nulo — semântica: A +0.050 / B +0.069 | captura: língua -0.076 / duração +0.117
+  INCONCLUSIVO a n≈253: diferenças abaixo de 0,05 não são interpretáveis.
+  ⚠ Uma sonda linear boa NÃO prova que o modelo usa essa informação; e uma sonda
+     ruim não prova que a informação não está lá em forma não-linear.
+agregado sobre 5 derangements × 505 amostras = 2525 decisões
+flips: 574 (22.7 %)
+
+     normal|perm            NONE     JUDGEMENTAL          DIRECT   total
+            NONE            1288              48             134    1470
+     JUDGEMENTAL              84             304              57     445
+          DIRECT             168              83             359     610
+
+flips no eixo DIRECT<->JUDGEMENTAL: 140 de 574 (24.4 %)
+  NONE -> JUDGEMENTAL: 48 (8.4 %)
+  NONE -> DIRECT: 134 (23.3 %)
+  JUDGEMENTAL -> NONE: 84 (14.6 %)
+  JUDGEMENTAL -> DIRECT: 57 (9.9 %)
+  DIRECT -> NONE: 168 (29.3 %)
+  DIRECT -> JUDGEMENTAL: 83 (14.5 %)
+
+casos que mudaram gravados em analysis/probe_cache_B15/task_b_flips.csv (com transcrição, para leitura manual)
+
+LEITURA:
+  NÃO CONFIRMA a H1: os flips são difusos / não se concentram no eixo
+  DIRECT<->JUDGEMENTAL. Compatível com H3 (fragilidade genérica da cabeça).
+  Passo manual pendente: ler o CSV e verificar se os JUDGEMENTAL cuja transcrição
+  'parece DIRECT' são os que mudam — só o visual desambigua esses.
+[cache] variantes carregadas de analysis/probe_cache_B15/pool_variants.pt (forward saltado)
+  pool_learned   (505, 768)
+  mean_all       (505, 768)
+  mean_temporal  (505, 6144)
+  top5           (505, 768)
+
+PORTAO da secao 8: cosseno(pool_learned recomputado, slot cacheado)
+  media=1.000000  min=0.999999  maxD absoluto=0.0000
+>>> PORTAO OK: o forward so-video reproduz o ramo de video do forward completo.
+rodando sondas (10-20 min de CPU; mean_temporal tem 6144 features)...
+  ok: A_hard (sexista?)
+  ok: B_hard (3 classes)
+  ok: língua (es vs en)
+  ok: duração > mediana
+
+                  alvo          pool_learned              mean_all         mean_temporal                  top5
+                             AUC-nulo (+-sd)       AUC-nulo (+-sd)       AUC-nulo (+-sd)       AUC-nulo (+-sd)
+     A_hard (sexista?)        +0.050 (+-0.020)        +0.057 (+-0.028)        +0.096 (+-0.022)        +0.040 (+-0.016)
+    B_hard (3 classes)        +0.069 (+-0.024)        +0.088 (+-0.018)        +0.093 (+-0.014)        +0.068 (+-0.021)
+     língua (es vs en)        -0.076 (+-0.033)        +0.055 (+-0.029)        +0.011 (+-0.031)        -0.089 (+-0.029)
+     duração > mediana        +0.117 (+-0.016)        +0.297 (+-0.022)        +0.304 (+-0.028)        +0.114 (+-0.016)
+
+cross-check com a secao 6 (mesma feature, mesmas metades):
+       A_hard (sexista?) sec6=+0.050  sec8=+0.050  D=+0.0000
+      B_hard (3 classes) sec6=+0.069  sec8=+0.069  D=+0.0000
+       língua (es vs en) sec6=-0.076  sec8=-0.076  D=+0.0000
+       duração > mediana sec6=+0.117  sec8=+0.117  D=+0.0000
+
+LEITURA (pre-registada):
+
+  A_hard (sexista?)   (tolerancia = 0.056 = max(0,05 ; 2sd))
+    pool_learned +0.050 | mean_all +0.057 | mean_temporal +0.096 | top5 +0.040
+    EMPATE: media simples e seletor decodificam igual. O seletor nao esta
+    perdendo sinal LINEARMENTE decodificavel, e trocar o agregador nao tem
+    alvo obvio. Combinado com o nivel absoluto baixo, empurra para 'a
+    informacao nao esta nos tokens', que FECHA a opcao (achado negativo).
+    top5 ~= pool_learned: a cauda de 1563 tokens nao adiciona nada ao
+    vetor atual — confirma que o pool e, de facto, um seletor de 5 tokens.
+
+  B_hard (3 classes)   (tolerancia = 0.050 = max(0,05 ; 2sd))
+    pool_learned +0.069 | mean_all +0.088 | mean_temporal +0.093 | top5 +0.068
+    EMPATE: media simples e seletor decodificam igual. O seletor nao esta
+    perdendo sinal LINEARMENTE decodificavel, e trocar o agregador nao tem
+    alvo obvio. Combinado com o nivel absoluto baixo, empurra para 'a
+    informacao nao esta nos tokens', que FECHA a opcao (achado negativo).
+    top5 ~= pool_learned: a cauda de 1563 tokens nao adiciona nada ao
+    vetor atual — confirma que o pool e, de facto, um seletor de 5 tokens.
+
+  ASSIMETRIA (video_core.py:1066-1071): 'mean_all ganha' e GATILHO para gastar
+  uma run; 'mean_all nao ganha' FECHA a opcao. Sonda mede decodificabilidade
+  linear de vetor congelado, nunca o que uma fusao treinada faria.
+tipo do encoder de video: PeftModel
+[cache] variantes SEM LoRA carregadas de analysis/probe_cache_B15/pool_variants_base.pt (forward saltado)
+
+PORTAO: distancia entre tokens BASE e ADAPTADOS (resumo mean_all)
+  cosseno(adaptado, base): media=0.996492  min=0.927426
+  ||adaptado - base|| / ||adaptado||: media=0.0724  p05=0.0347  p95=0.1591
+>>> PORTAO OK: desligar o adaptador muda os tokens de forma mensuravel.
+    (referencia: ||DW||_F/||W||_F ~ 2 % nos pesos; aqui o efeito nos TOKENS e 7.24 %)
+rodando sondas sobre tokens SEM LoRA (10-15 min de CPU)...
+  ok: A_hard (sexista?)
+  ok: B_hard (3 classes)
+  ok: língua (es vs en)
+  ok: duração > mediana
+
+AUC - nulo, por condicao. RESUMOS SEM PARAMETROS (comparacao valida):
+
+  --- mean_all ---
+                    alvo        COM LoRA        SEM LoRA   ganho da adaptacao
+       A_hard (sexista?)     +0.057 (+-0.028)     +0.053 (+-0.027)       +0.004
+      B_hard (3 classes)     +0.088 (+-0.018)     +0.083 (+-0.017)       +0.005
+       língua (es vs en)     +0.055 (+-0.029)     +0.060 (+-0.027)       -0.005
+       duração > mediana     +0.297 (+-0.022)     +0.297 (+-0.019)       +0.001
+
+  --- mean_temporal ---
+                    alvo        COM LoRA        SEM LoRA   ganho da adaptacao
+       A_hard (sexista?)     +0.096 (+-0.022)     +0.075 (+-0.024)       +0.021
+      B_hard (3 classes)     +0.093 (+-0.014)     +0.076 (+-0.017)       +0.017
+       língua (es vs en)     +0.011 (+-0.031)     -0.004 (+-0.033)       +0.015
+       duração > mediana     +0.304 (+-0.028)     +0.306 (+-0.030)       -0.002
+
+  --- pool_learned (CONFUNDIDO: o pool foi treinado sobre tokens ADAPTADOS; 
+      aplicado a tokens base mede tambem o descasamento) ---
+       A_hard (sexista?)  COM=+0.050  SEM=+0.036  D=+0.014
+      B_hard (3 classes)  COM=+0.069  SEM=+0.075  D=-0.005
+       língua (es vs en)  COM=-0.076  SEM=-0.079  D=+0.003
+       duração > mediana  COM=+0.117  SEM=+0.142  D=-0.025
+
+LEITURA (pre-registada) — so os resumos SEM parametros contam:
+
+  A_hard (sexista?)
+    mean_all       COM +0.057 | SEM +0.053 | ganho +0.004 (tolerancia 0.056)
+    mean_temporal  COM +0.096 | SEM +0.075 | ganho +0.021 (tolerancia 0.050)
+    A ADAPTACAO NAO MOVEU nada mensuravel. Com ||DW|| = 2 % da matriz base,
+    os tokens sao essencialmente features de PRE-TREINO do VideoMAE.
+    Isso NAO decide entre as duas causas — 'falta capacidade' e 'o objetivo
+    de reconstrucao de pixels nao tem o que oferecer' predizem o mesmo aqui.
+    Mas muda o custo esperado: o braco de mais capacidade passa a ser aposta
+    contra um retorno medido de ZERO no primeiro incremento de adaptacao.
+
+  B_hard (3 classes)
+    mean_all       COM +0.088 | SEM +0.083 | ganho +0.005 (tolerancia 0.050)
+    mean_temporal  COM +0.093 | SEM +0.076 | ganho +0.017 (tolerancia 0.050)
+    A ADAPTACAO NAO MOVEU nada mensuravel. Com ||DW|| = 2 % da matriz base,
+    os tokens sao essencialmente features de PRE-TREINO do VideoMAE.
+    Isso NAO decide entre as duas causas — 'falta capacidade' e 'o objetivo
+    de reconstrucao de pixels nao tem o que oferecer' predizem o mesmo aqui.
+    Mas muda o custo esperado: o braco de mais capacidade passa a ser aposta
+    contra um retorno medido de ZERO no primeiro incremento de adaptacao.
+
+  DIAGNOSTICO DE NUISANCE — no que os 2 % de DW foram gastos:
+    mean_all       ganho maximo em ROTULO +0.005 | em NUISANCE (duracao/lingua) +0.001
+    mean_temporal  ganho maximo em ROTULO +0.021 | em NUISANCE (duracao/lingua) +0.015
+
+  ⚠ Sonda linear sobre vetores congelados, n≈252 na metade de report. Nao mede o
+    que uma fusao treinada extrairia de forma nao-linear. A regra assimetrica de
+    video_core.py:1066-1071 continua: nada aqui e evidencia de que o video ajuda.
+==============================================================================
+RESUMO — sondas sobre run_B2_bio_viewer_seed42_B15 | val = 505 | sem treino, sem re-extração
+==============================================================================
+
+[0] PORTÃO: replay fusion→heads reproduz o forward completo e as permutações
+    já medidas em test.ipynb. Todos os números abaixo são exatos, não aproximados.
+
+[3.1] Task B — classes efetivamente preditas em condição normal: ['NONE', 'JUDGEMENTAL', 'DIRECT']
+
+[2] H3 (Task B ICMNorm hard, Δ vs normal, 5 seeds):
+      perm_across    Δ=-0.0631 ±0.0501   ‖Δvid_feat‖=13.154
+      noise_across   Δ=-0.0353 ±0.0484   ‖Δvid_feat‖=13.154
+      perm_within    Δ=-0.0002 ±0.0207   ‖Δvid_feat‖=13.119
+      noise_within   Δ=-0.0423 ±0.0465   ‖Δvid_feat‖=13.119
+      tolerância pré-registada = 0.0501
+
+[1] Escada de permutação (Δ médio, 5 seeds):
+          slot     a_H_hard     a_S_soft     b_H_hard     b_S_soft     c_H_hard     c_S_soft
+         video      -0.0079      -0.0225      -0.0631      -0.0527      +0.0032      -0.0086
+         audio      -0.0120      -0.0143      -0.0574      -0.0417      -0.0098      -0.0207
+         texto      -0.2313      -0.1985      -0.2541      -0.1921      -0.2160      -0.1514
+           bio      -0.0078      -0.0051      -0.0207      -0.0092      -0.0022      +0.0027
+
+[3] Escalas e contribuição na fusão (peso × escala, descritivo):
+         video ‖feat‖=  15.632  ‖W·feat‖=  18.840 (18.3 %)
+         audio ‖feat‖=  23.174  ‖W·feat‖=  27.242 (26.5 %)
+         texto ‖feat‖=  31.126  ‖W·feat‖=  53.686 (52.2 %)
+           bio ‖feat‖=   1.888  ‖W·feat‖=   3.091 ( 3.0 %)
+      pool: 5 tokens efetivos de 1568 (uniforme = 1568)
+      vid_feat std/média entre amostras = 0.757
+
+[4] Sondas lineares (AUC − nulo, metade de report):
+           A_hard (sexista?)  video=+0.050  texto=+0.212  audio=+0.083  bio=+0.043
+          B_hard (3 classes)  video=+0.069  texto=+0.189  audio=+0.133  bio=+0.066
+           língua (es vs en)  video=-0.076  texto=+0.466  audio=+0.424  bio=+0.411
+           duração > mediana  video=+0.117  texto=+0.323  audio=+0.494  bio=+0.361
+
+[5] Flips de B sob permutação: 574 de 2525 decisões; eixo DIRECT<->JUDGEMENTAL = 140 de 574
+
+[6] Comparacao de resumos dos 1568 tokens (AUC - nulo):
+           A_hard (sexista?)  pool_learned=+0.050  mean_all=+0.057  mean_temporal=+0.096  top5=+0.040
+          B_hard (3 classes)  pool_learned=+0.069  mean_all=+0.088  mean_temporal=+0.093  top5=+0.068
+      pool: peso do token maximo (mediana) = 0.502  |  massa top-10 = 0.970
+
+[7] Retorno da adaptacao LoRA (resumos SEM parametros, AUC - nulo):
+      mean_all            A_hard (sexista?)  COM=+0.057  SEM=+0.053  ganho=+0.004
+      mean_all           B_hard (3 classes)  COM=+0.088  SEM=+0.083  ganho=+0.005
+      mean_all            duração > mediana  COM=+0.297  SEM=+0.297  ganho=+0.001
+      mean_temporal       A_hard (sexista?)  COM=+0.096  SEM=+0.075  ganho=+0.021
+      mean_temporal      B_hard (3 classes)  COM=+0.093  SEM=+0.076  ganho=+0.017
+      mean_temporal       duração > mediana  COM=+0.304  SEM=+0.306  ganho=-0.002
+      efeito de desligar o LoRA nos tokens: 7.24 % da norma de mean_all
+
+==============================================================================
+REGRA QUE NÃO MUDA (video_core.py:1069): nada aqui é evidência de que o vídeo
+ajuda. As sondas são GATILHO para gastar runs num braço treinado. Quem prova é
+o braço treinado.
+==============================================================================

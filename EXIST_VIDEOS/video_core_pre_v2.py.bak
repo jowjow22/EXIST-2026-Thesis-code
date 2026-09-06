@@ -1,0 +1,1925 @@
+"""video_core.py
+
+Lógica reutilizável do sistema da Task 3 (vídeos do TikTok, EXIST 2026), extraída de
+`Thesis_video_fixed.ipynb` e reescrita conforme a especificação de
+`improvements/04_RECONCILIATION.md` (que vence sobre os relatórios 01/02/03).
+
+Contém: constantes, seeding/determinismo, fingerprints, carregamento de frames/áudio,
+construção do vetor biométrico, labels soft, `EXISTVideoDataset`, `EXISTVideoModel`,
+losses, métricas PyEvALL, busca de threshold da Task C, peças do Trainer e IO de
+checkpoint. **NÃO contém nada que execute treino no import** — carga de dataset, split,
+`TrainingArguments`, `Trainer` e `trainer.train()` ficam no notebook
+(`Thesis_video_improved.ipynb`), mesmo padrão já aceito em `EXIST_MEMES/memes_core.py`.
+
+⚠ NUNCA fundir este módulo com `memes_core.py`. As duas convenções da Task A são
+OPOSTAS (aqui `sigmoid(logits_a) = P(YES)`; lá `= P(NO)`) e os nomes das funções são
+iguais. Um merge feito na confiança de que nomes iguais significam comportamento igual
+inverte a Task A sem erro e sem shape errado — só métricas ruins.
+Ver `selfcheck_task_a_convention()` e 04_RECONCILIATION §5.
+
+Mudanças de comportamento em relação ao notebook original (todas especificadas em
+`improvements/04_RECONCILIATION.md`, rastreadas em `improvements/05_IMPLEMENTATION_NOTES.md`):
+ARCH-01, ARCH-02, ARCH-03(b), ARCH-05, ARCH-06, ARCH-07, ARCH-08, ARCH-10, ARCH-11(b),
+ARCH-12, ARCH-13, ARCH-14, ARCH-17.3/.4, ARCH-19, ARCH-20, OPT-03, OPT-06, OPT-07,
+OPT-08, OPT-11, OPT-13, SIMP-01..SIMP-16, DIV-01..DIV-07.
+"""
+
+import hashlib
+import json
+import os
+import pickle
+import random
+import tempfile
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from sklearn.metrics import f1_score, roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import RobustScaler
+from torch.utils.data import Dataset
+
+from transformers import (
+    Trainer,
+    VideoMAEModel,
+    XLMRobertaModel,
+    XLMRobertaTokenizer,
+    set_seed,
+)
+
+from pyevall.evaluation import PyEvALLEvaluation
+from pyevall.utils.utils import PyEvALLUtils
+
+# Imports deliberadamente ausentes em relação ao notebook original (SIMP-12, ARCH-17.3):
+# `re`, `emoji`, `wordsegment.segment`, `PIL.Image`, `tqdm`, `DataLoader`,
+# `CLIPProcessor`, `CLIPVisionModel`, `whisper`, `torchaudio`, `EarlyStoppingCallback`,
+# `AveragedModel`/`SWALR`/`update_bn` — todos eram código morto aqui.
+# `emoji`/`wordsegment` eram resíduo do pipeline de texto do modelo de memes: o modelo
+# de vídeo tokeniza o transcript cru. Isso é DECISÃO, não esquecimento (BUG-F: nenhuma
+# ação nesta ronda; se virar hipótese, é braço de ablação, nunca baseline).
+# `peft` é importado dentro de `make_lora_config`/`build_backbones` para manter o custo
+# de importar este módulo baixo e a superfície de dependência explícita.
+
+
+# ============================================================================
+# 1. Reprodutibilidade — seeds, determinismo e fingerprints
+# ============================================================================
+
+# O cuBLAS lê esta variável quando cria o handle (primeira operação em GPU); precisa
+# estar definida antes de qualquer uso de CUDA para ter efeito. Fica no import, como
+# em memes_core.py. As flags globais do torch NÃO ficam aqui — ver set_all_seeds.
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
+# OPT-06 / 04_RECONCILIATION §6: duas seeds com papéis SEPARADOS.
+#   SPLIT_SEED — define o conjunto de validação. FIXO. NUNCA muda, nunca é re-sorteado.
+#                Re-sortear porque os números saíram feios é split-shopping.
+#   INIT_SEED  — varia em {42, 7, 2025}: init dos pesos novos + ordem dos dados.
+# Com o split fixo, as 9 runs (3 condições × 3 seeds) partilham exatamente o mesmo val
+# e o delta por INIT_SEED é PAREADO — é a única forma compatível com o teste correto
+# (delta por seed + consistência de sinal, nunca |Δmédia| > std).
+SPLIT_SEED = 42
+INIT_SEED = 42
+
+VAL_FRACTION = 0.20   # OPT-11: 80/20 → ~505 amostras de val (era 90/10 → 253).
+                      # Pré-requisito do ARCH-11(b): dividir o val em metades para o
+                      # ajuste de limiar não é viável a 253 amostras.
+
+# Portão do split (04_RECONCILIATION §6.3): nenhuma categoria da Task C pode ficar com
+# contagem de positivos de um dígito no val candidato.
+MIN_TASK_C_POSITIVES_VAL = 10
+
+
+def set_all_seeds(seed: int):
+    """Fixa todos os RNGs que afetam a reprodutibilidade e força kernels determinísticos.
+
+    Chamar de novo imediatamente antes de cada passo cuja aleatoriedade precisa ser
+    reproduzível (init do VideoMAE+LoRA, do XLM-R+LoRA e do EXISTVideoModel — as
+    matrizes LoRA A são aleatórias) — re-zera os geradores para o mesmo ponto,
+    independentemente do que rodou antes.
+
+    As flags globais do torch são setadas AQUI e não no import: importar `video_core`
+    a partir de um script de inferência não deve virar flags globais do processo.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)            # RNG da CPU (init de pesos, dropout em CPU)
+    torch.cuda.manual_seed_all(seed)   # RNG de todas as GPUs (dropout em GPU)
+    set_seed(seed)                     # RNG interno do HF (o Trainer o re-seeda tarde demais)
+
+    # Sem isto, o cuDNN escolhe algoritmos por benchmark de tempo de execução (varia de
+    # run para run) e a CUDA usa kernels com somas atômicas em ordem arbitrária —
+    # diferenças de arredondamento que se amplificam ao longo das épocas.
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    # Exige implementação determinística de TODO operador; levanta RuntimeError nomeando
+    # o operador culpado, o que é melhor que irreprodutibilidade silenciosa.
+    torch.use_deterministic_algorithms(True)
+
+
+def model_fingerprint(model) -> str:
+    """SHA-256 (16 hex) sobre todos os pesos — fingerprints iguais significam pesos
+    bit a bit idênticos. Comparar entre runs verifica a reprodutibilidade.
+
+    ⚠ Fingerprints só são comparáveis DENTRO do mesmo par (braço, INIT_SEED): braços
+    diferentes criam módulos diferentes, em ordem diferente, com `fan_in` diferente na
+    fusão → consomem RNG de forma diferente (04_RECONCILIATION §1.3).
+    """
+    digest = hashlib.sha256()
+    for name, param in sorted(model.state_dict().items()):
+        digest.update(name.encode())
+        digest.update(param.detach().cpu().numpy().tobytes())
+    return digest.hexdigest()[:16]
+
+
+def record_fingerprint(run_dir, tag: str, model) -> str:
+    """Persiste o fingerprint em `RUN_DIR/fingerprints.json` e compara com o valor já
+    gravado para a mesma tag, se existir (ARCH-19).
+
+    A verificação manual de fingerprints não escala para 9–12 runs desatendidas, e na
+    run original a célula que faria a comparação automática nem chegou a rodar
+    (ARCH-12). `tag` é tipicamente "init" ou "final".
+    """
+    run_dir = Path(run_dir)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    path = run_dir / "fingerprints.json"
+
+    current = model_fingerprint(model)
+    previous = {}
+    if path.exists():
+        with open(path) as f:
+            previous = json.load(f)
+
+    if tag in previous:
+        if previous[tag] == current:
+            print(f"[fingerprint] {tag}: {current}  ✓ idêntico à run anterior")
+        else:
+            print(f"[fingerprint] {tag}: {current}  ✗ MISMATCH "
+                  f"(run anterior: {previous[tag]}) — a run NÃO é reprodutível")
+    else:
+        print(f"[fingerprint] {tag}: {current}  (primeira run; nada a comparar)")
+
+    previous[tag] = current
+    with open(path, "w") as f:
+        json.dump(previous, f, indent=2)
+    return current
+
+
+# ============================================================================
+# 2. Labels, hierarquias e convenções de saída
+# ============================================================================
+
+LABELS_2_2 = ['NONE', 'JUDGEMENTAL', 'DIRECT']
+LABELS_2_3 = ['NONE', 'IDEOLOGICAL-INEQUALITY', 'MISOGYNY-NON-SEXUAL-VIOLENCE',
+              'SEXUAL-VIOLENCE', 'OBJECTIFICATION', 'STEREOTYPING-DOMINANCE']
+
+# CONVENÇÃO DA TASK A DO MODELO DE VÍDEO (oposta à do modelo de MEMES):
+#     sigmoid(logits_a) = P(YES)
+# e o eixo -1 de probs_a / targets_a é, NESTA ORDEM:
+TASK_A_PROB_ORDER = ("NO", "YES")
+IDX_NO, IDX_YES = TASK_A_PROB_ORDER.index("NO"), TASK_A_PROB_ORDER.index("YES")
+# `LABELS_2_1 = ['YES', 'NO']` foi REMOVIDA (DIV-07 / SIMP-12): declarava a ordem
+# INVERSA da que os arrays realmente usam e nunca era indexada — era a raiz do risco de
+# merge. A constante acima é a ordem de verdade E é de facto indexada em
+# `_format_for_pyevall`. `selfcheck_task_a_convention()` amarra as duas pontas.
+
+TASK_2_2_HIERARCHY = {
+    "YES": ["DIRECT", "JUDGEMENTAL"],
+    "NO": [],
+}
+TASK_2_3_HIERARCHY = {
+    "YES": [
+        "IDEOLOGICAL-INEQUALITY",
+        "STEREOTYPING-DOMINANCE",
+        "OBJECTIFICATION",
+        "SEXUAL-VIOLENCE",
+        "MISOGYNY-NON-SEXUAL-VIOLENCE",
+    ],
+    "NO": [],
+}
+
+# DIV-03 / BUG-C: o notebook original gravava "EXIST2025" hardcoded no treino enquanto
+# `inference_video.py` usava "EXIST2026". No treino a string é a mesma em pred e gold,
+# então não afetava métrica — mas é a string que vai nos JSONs de submissão, e o PyEvALL
+# casa `test_case` entre pred e gold.
+# ⚠ PENDENTE: confirmar contra o arquivo gold oficial do EXIST 2026 (ou as guidelines de
+# submissão) ANTES de submeter. NÃO deduzir por analogia com 2025.
+TEST_CASE = "EXIST2026"
+
+# Valores de corte testados na busca de threshold da Task C (só pós-treino).
+THRESHOLD_GRID = np.arange(0.05, 0.65, 0.05).tolist()   # [0.05, 0.10, ..., 0.60]
+
+# Sentinelas de "nenhum voto válido" (todas as labels UNKNOWN).
+# ⚠ Assimétricas de propósito NESTA ronda: A usa -100.0, B e C usam -1.0 na coluna 0.
+# O ARCH-17.1 propõe unificar em -100.0, e o Agente 3 concordou — mas a unificação muda
+# quais linhas são mascaradas e `inference_video.py` (que NÃO foi tocado nesta ronda)
+# ainda constrói o gold com a convenção antiga. Unificar aqui criaria uma divergência
+# silenciosa entre os dois arquivos. Nomeadas em constantes para que a unificação futura
+# seja uma edição em um lugar só. Ver 05_IMPLEMENTATION_NOTES.
+SENTINEL_A = -100.0
+SENTINEL_BC = -1.0
+
+
+# ============================================================================
+# 3. Constantes de dimensão e de treino
+# ============================================================================
+
+NUM_FRAMES = 16               # VideoMAE-base espera 16 frames
+FRAME_H = FRAME_W = 224
+NUM_CHANNELS = 3
+
+VIDEO_DIM = 768               # hidden size do VideoMAE-base
+AUDIO_RAW_DIM = 1280          # hidden size do encoder do Whisper-large
+AUDIO_PROJ_DIM = 768
+TEXT_DIM = 1024               # hidden size do XLM-RoBERTa-large
+
+BIO_RAW_DIM = 16              # features de eye-tracking + heart-rate por utilizador
+BIO_INPUT_DIM = BIO_RAW_DIM + 1     # +1 para o CVPC
+BIO_HIDDEN_DIM = 128          # subido de 32 para equilibrar vs texto=1024/vídeo=768/áudio=768
+BIO_MLP_HIDDEN = 128          # SIMP-14: era o literal 128 dentro do bio_mlp. Coincidia com
+                              # BIO_HIDDEN_DIM por acaso; mudar um não deve mexer no outro.
+BIO_DROPOUT = 0.2             # o dropout mais alto do modelo — agora documentado
+FUSION_DROPOUT = 0.1
+MODALITY_DROPOUT_P = 0.05     # markdown da célula 0 do original: "0.05 (was 0.15)"
+
+VIEWER_EMB_DIM = 32
+VIEWER_PROJ_DIM = BIO_RAW_DIM  # tem de casar com a dim de bio_vec para a subtração
+
+FUSION_HIDDEN_DIM = 1024
+
+NUM_TASK_A = 1
+NUM_TASK_B = len(LABELS_2_2)   # 3
+NUM_TASK_C = len(LABELS_2_3)   # 6
+
+LOSS_W_A = 1.0
+LOSS_W_B = 0.7
+LOSS_W_C = 0.7
+
+# ARCH-05: `max_length=128` truncava 42,9 % das transcrições (mediana 105 tokens,
+# p75 231, p90 364, máx 1122, medido com o tokenizer XLM-R sobre o JSON de treino).
+# 256 cobre 78 % integralmente; 384 cobriria 92 % mas custa ~+49 % de compute por passo
+# contra ~+22 % de 256 (proxy de FLOPs do Agente 3). 256 é o ponto escolhido.
+# ⚠ Tem de ser IGUAL no treino e em qualquer caminho de inferência.
+MAX_LENGTH = 256
+
+# ARCH-06 / 04_RECONCILIATION §3 — PROVISÓRIO, NÃO É RECOMENDAÇÃO FINAL.
+# O defeito é fato verificado (SWA sobre a cauda de overfitting; o modelo final era pior
+# que a época 4/6 em TODAS as seis métricas). O NÚMERO, não. A curva que produziu "6"
+# é do sistema PRÉ-correção: restaurar q_bias (ARCH-01), re-extrair áudio (ARCH-04),
+# remover a cross-attention (ARCH-03 b) e dobrar max_length (ARCH-05) movem o ponto de
+# overfitting, e não se sabe em que direção.
+#
+# CRITÉRIO DE LEITURA, fixado a priori (não negociável depois de ver a curva):
+#     E = argmin(eval_loss) sobre as CALIBRATION_EPOCHS épocas da run de calibração,
+#     com INIT_SEED=42 e o split congelado. Congelar E e usá-lo, sem alteração, em
+#     todas as runs da tabela de ablação.
+# Por que eval_loss e não a ICM: escolher a época pela MESMA métrica que se reporta é o
+# vazamento nº 2 do precedente dos memes. `eval_loss` é escalar, independente do PyEvALL,
+# e não é o número que vai para a tabela. Na run existente daria E=4 (val loss 1,3616),
+# enquanto os picos de ICM estão entre 4 e 6 — ou seja, é um critério CONSERVADOR.
+# A run de calibração tem de rodar com o SWA já removido (está) e com EXATAMENTE a
+# configuração da tabela final (max_length, batch/accum, split, warmup, LR).
+NUM_TRAIN_EPOCHS_PROVISIONAL = 6
+CALIBRATION_EPOCHS = 15
+
+# `load_best_model_at_end` fica False. NÃO ligar: selecionar a época pela mesma métrica
+# reportada, sobre o mesmo split, é o vazamento nº 2 do precedente dos memes.
+# `metric_for_best_model` fica deliberadamente NÃO definido: com a flag em False é
+# inerte, mas defini-lo com uma chave de ICM arma o vazamento para quem virar a flag.
+LOAD_BEST_MODEL_AT_END = False
+
+VIDEOMAE_NAME = "MCG-NJU/videomae-base"
+XLMR_NAME = "xlm-roberta-large"
+
+LORA_R = 16
+LORA_ALPHA = 32
+LORA_DROPOUT = 0.05
+LORA_TARGET_MODULES = ["query", "value"]
+
+# Mapeamento viewer ID → índice (painel fixo de 10)
+VIEWER_TO_IDX = {
+    "EN1_2": 0, "EN2_2": 1, "EN3_2": 2, "EN4_2": 3, "EN5_2": 4,
+    "ES1_2": 5, "ES2_2": 6, "ES3_2": 7, "ES4_2": 8, "ES5_2": 9,
+}
+NUM_VIEWERS = len(VIEWER_TO_IDX)
+
+# Imputação de reaction time por língua (da análise do Dia 1) e clipping de outliers.
+RT_IMPUTE = {"en": 29.0, "es": 17.5}
+RT_CLIP = 120.0
+
+
+# ============================================================================
+# 4. Caminhos — uma fonte única de verdade por run
+# ============================================================================
+# ARCH-12 / SIMP-02 / BUG-A: a célula 53 gravava em `best_model_seed_{SEED}_cross_att`,
+# a 54 lia de `best_model_seed_{SEED}` e a 17 gravava o scaler num terceiro sítio. A
+# validação de checkpoint nunca chegou a rodar (terminou em RuntimeError). Agora há UM
+# diretório por (condição × INIT_SEED), derivado, e todo consumidor usa este helper.
+
+def condition_tag(use_bio: bool, use_viewer_emb: bool) -> str:
+    """Nome curto e estável da condição de ablação (ARCH-13: sem braço fantasma).
+
+    B0 = sem biosinais | B1 = bio sem centragem por viewer | B2 = bio + viewer.
+    O antigo `FULL_bio_viewer_tau` foi REMOVIDO: tinha flags idênticas a B2 (a rede-τ
+    não existe no modelo) e produzia uma linha bit-idêntica na tabela do paper.
+    """
+    if not use_bio:
+        return "B0_content_only"
+    return "B2_bio_viewer" if use_viewer_emb else "B1_bio_no_viewer"
+
+
+def run_dir(init_seed: int, use_bio: bool, use_viewer_emb: bool, root: str = ".") -> Path:
+    """Diretório único da run: pesos + scaler + tokenizer + fingerprints + meta."""
+    return Path(root) / f"run_{condition_tag(use_bio, use_viewer_emb)}_seed{init_seed}"
+
+
+def ckpt_dir(init_seed: int, use_bio: bool, use_viewer_emb: bool, root: str = ".") -> Path:
+    """Diretório dos checkpoints intermediários do Trainer (`output_dir`)."""
+    return Path(root) / f"checkpoints_{condition_tag(use_bio, use_viewer_emb)}_seed{init_seed}"
+
+
+def frames_dir(split: str, root: str = ".") -> Path:
+    """`split` ∈ {"train", "test"}. Ver OPT-12: se houver re-extração (ARCH-09/OPT-01),
+    escrever numa árvore versionada (`frames/v2/...`) em vez de sobrescrever — os
+    scripts de extração são resume-safe e ignorariam a correção em silêncio."""
+    return Path(root) / "frames" / split
+
+
+def audio_dir(split: str, root: str = ".") -> Path:
+    return Path(root) / "audio_features" / split
+
+
+def split_artifact_path(split_seed: int = SPLIT_SEED, root: str = ".") -> Path:
+    """Artefato congelado do split (OPT-06 §6.2). Commitado; carregado por toda run."""
+    return Path(root) / "Dataset" / f"val_split_{split_seed}.json"
+
+
+# ============================================================================
+# 5. IO de features pré-extraídas
+# ============================================================================
+
+def load_frames(frames_dir_path, item_id) -> torch.Tensor:
+    """Carrega o tensor de frames pré-extraído.
+
+    Devolve [NUM_FRAMES, NUM_CHANNELS, FRAME_H, FRAME_W] = [16, 3, 224, 224] em float32.
+    O `.float()` no fim é o que torna este loader agnóstico ao dtype de armazenamento —
+    se a re-extração do OPT-01 passar a gravar fp16 ou uint8, nada aqui muda.
+
+    ⚠ BUG-D (não resolvido nesta ronda, exige re-extração): os scripts de extração
+    gravam `torch.zeros(...)` quando o vídeo não é legível, então o arquivo SEMPRE
+    existe e este `except` é praticamente inalcançável. Pior: os frames são gravados
+    já normalizados, logo um tensor de zeros não é "vídeo preto", é o pixel médio do
+    ImageNet — uma entrada plausível, não neutra.
+    """
+    path = Path(frames_dir_path) / f"{item_id}.pt"
+    try:
+        return torch.load(path, weights_only=True).float()
+    except Exception:
+        print(f"[WARN] Frames não encontrados para {item_id}, usando zeros")
+        return torch.zeros(NUM_FRAMES, NUM_CHANNELS, FRAME_H, FRAME_W,
+                           dtype=torch.float32)
+
+
+def load_audio_features(audio_dir_path, item_id) -> torch.Tensor:
+    """Carrega as features do encoder do Whisper, já agrupadas ([1280] float).
+
+    ⚠ ARCH-04 (não resolvido nesta ronda, exige re-extração): as features atuais são a
+    média do encoder sobre a janela INTEIRA de 30 s, incluindo o padding, e cortam o
+    áudio em 30 s. Mediana de duração medida = 16,4 s → ~45 % do vetor da amostra
+    mediana é encoder de silêncio, e o fator de diluição VARIA com a duração (variável
+    de confusão embutida em todo embedding de áudio). Os `.pt` não estão corrompidos —
+    estão diluídos.
+    """
+    path = Path(audio_dir_path) / f"{item_id}.pt"
+    try:
+        return torch.load(path, weights_only=True).float()
+    except Exception:
+        print(f"[WARN] Features de áudio não encontradas para {item_id}, usando zeros")
+        return torch.zeros(AUDIO_RAW_DIM, dtype=torch.float32)
+
+
+# ============================================================================
+# 6. Vetor biométrico (eye-tracking + heart rate)
+# ============================================================================
+# EEG está fora por decisão de projeto (70,6 % de canais mortos) — não reintroduzir.
+# A normalização é `RobustScaler` por feature, ajustado SÓ no treino (anti-leakage).
+
+def safe_float(val, default=0.0) -> float:
+    """Converte para float com segurança — trata None, NaN e não-numérico."""
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return default
+
+
+def _reaction_time(et: dict, lang: str) -> tuple[float, bool]:
+    """Reaction time com clipping e imputação por língua.
+
+    DIV-06 — semântica UNIFICADA: `build_bio_vector` e `collect_bio_vectors` usavam
+    regras diferentes para um `reaction_time` presente, não-`None` e não-castável (o
+    primeiro dava 0.0 via `safe_float`; o segundo dava NaN → imputava). A semântica
+    correta é a do segundo (não-castável → NaN → imputa), e é a que fica aqui: o scaler
+    e a feature servida ao modelo passam a ver exatamente o mesmo número.
+    Verificado pelo Agente 2 sobre `EXIST2026_training.json` (5 048 linhas
+    utilizador-vídeo): 0 valores não-castáveis, 97 `None` → nos dados ATUAIS a
+    unificação é numericamente neutra. Continua obrigatório contar as imputações no
+    split de test antes de submeter.
+
+    Devolve (valor, foi_imputado).
+    """
+    rt = safe_float(et.get("reaction_time"), default=float("nan"))
+    imputed = rt != rt          # NaN check
+    if imputed:
+        rt = RT_IMPUTE[lang]
+    return min(rt, RT_CLIP), imputed
+
+
+def _raw_bio_features(et: dict, hr: dict, rt: float) -> np.ndarray:
+    """As 16 features cruas, na ORDEM CANÓNICA. Fonte única — o `RobustScaler` é
+    ajustado sobre exatamente estes índices, nesta ordem.
+
+    Índices que valem lembrar: 6 = `fixations_count`, 11 = `reaction_time`. Ambos já
+    entram aqui, escalados. É por isso que `rt_norm`/`fix_norm` foram REMOVIDOS e não
+    reconectados (SIMP-06): reconectá-los duplicaria features, e em escala bruta
+    (~10²–10³) ao lado de features robust-scaled.
+    """
+    return np.array([
+        safe_float(et.get("3d_eye_states_pupil diameter left [mm]_mean")),
+        safe_float(et.get("3d_eye_states_pupil diameter left [mm]_std")),
+        safe_float(et.get("3d_eye_states_pupil diameter right [mm]_mean")),
+        safe_float(et.get("3d_eye_states_pupil diameter right [mm]_std")),
+        safe_float(et.get("blinks_count")),
+        safe_float(et.get("blinks_duration_mean_ns")),
+        safe_float(et.get("fixations_count")),
+        safe_float(et.get("fixations_duration_mean_ns")),
+        safe_float(et.get("fixations_duration_std_ns")),
+        safe_float(et.get("saccades_count")),
+        safe_float(et.get("saccades_duration_mean_ns")),
+        rt,
+        safe_float(hr.get("garmin_hr_mean")),
+        safe_float(hr.get("garmin_hr_std")),
+        safe_float(hr.get("garmin_hr_max")),
+        safe_float(hr.get("garmin_hr_min")),
+    ], dtype=np.float32)
+
+
+def build_bio_vector(sensorial: dict, lang: str, scaler):
+    """Constrói as entradas biométricas de uma amostra.
+
+    Devolve (SIMP-06 — eram 5 valores; `rt_norm` e `fix_norm` atravessavam
+    dataset → collate → GPU → assinatura do forward sem NUNCA serem lidos):
+        bio_vec:  [16] média das features ET+HR dos 2 avaliadores, robust-scaled
+        cvpc:     [1]  similaridade do cosseno entre os vetores escalados dos 2
+        user_ids: [2]  índices dos avaliadores na tabela de embeddings
+    """
+    users = sensorial["users"]                      # ex.: ["ES1_2", "ES3_2"]
+    et_data = sensorial["modalities"]["ET"]["by_user"]
+    hr_data = sensorial["modalities"]["HR"]["by_user"]
+
+    user_vecs, user_ids = [], []
+    for user in users:
+        rt, _ = _reaction_time(et_data[user], lang)
+        user_vecs.append(_raw_bio_features(et_data[user], hr_data[user], rt))
+        user_ids.append(VIEWER_TO_IDX[user])
+
+    v1_scaled = scaler.transform(user_vecs[0].reshape(1, -1)).flatten()   # [16]
+    v2_scaled = scaler.transform(user_vecs[1].reshape(1, -1)).flatten()   # [16]
+
+    # CVPC — similaridade inter-avaliador sobre os vetores já escalados.
+    dot = np.dot(v1_scaled, v2_scaled)
+    norms = (np.linalg.norm(v1_scaled) * np.linalg.norm(v2_scaled)) + 1e-8
+    cvpc = float(dot / norms)
+
+    bio_scaled = np.mean([v1_scaled, v2_scaled], axis=0)                  # [16]
+
+    return (
+        torch.tensor(bio_scaled, dtype=torch.float32),   # [16]
+        torch.tensor([cvpc], dtype=torch.float32),       # [1]
+        torch.tensor(user_ids, dtype=torch.long),        # [2]
+    )
+
+
+def collect_bio_vectors(dataframe: pd.DataFrame, report: bool = True) -> np.ndarray:
+    """Achata os vetores biométricos por utilizador do DF inteiro, para ajustar o scaler.
+
+    ⚠ Ajustar SÓ no treino. `inference_video.py` permitia omitir `--scaler` e ajustar no
+    próprio conjunto avaliado (BUG-B/ARCH-18) — isso viola a regra anti-leakage do
+    projeto; `--scaler` tem de ser `required=True`.
+
+    `report=True` imprime quantas imputações de reaction_time aconteceram — obrigatório
+    rodar essa contagem sobre o JSON de test antes de submeter (DIV-06).
+    """
+    vectors, n_imputed, n_rows = [], 0, 0
+    for _, row in dataframe.iterrows():
+        sensorial, lang = row["sensorial"], row["lang"]
+        et_data = sensorial["modalities"]["ET"]["by_user"]
+        hr_data = sensorial["modalities"]["HR"]["by_user"]
+        for user in sensorial["users"]:
+            rt, imputed = _reaction_time(et_data[user], lang)
+            n_imputed += int(imputed)
+            n_rows += 1
+            vectors.append(_raw_bio_features(et_data[user], hr_data[user], rt))
+    if report:
+        print(f"[bio] {n_rows} linhas utilizador-vídeo | "
+              f"reaction_time imputado em {n_imputed} ({100 * n_imputed / max(n_rows, 1):.2f} %)")
+    return np.stack(vectors)
+
+
+# ============================================================================
+# 7. Labels soft e tokenização
+# ============================================================================
+# Regras do projeto, respeitadas aqui: UNKNOWN e REPORTED excluídos dos targets; o voto
+# '-' (não-sexista) na Task B/C é REMAPEADO para NONE, não filtrado — filtrar infla
+# artificialmente as proporções de DIRECT/JUDGEMENTAL.
+
+def build_soft_label_a(labels: list) -> torch.Tensor:
+    """Task A. Proporção de votos YES; UNKNOWN excluído.
+    Devolve o escalar sentinela SENTINEL_A se todos os votos forem UNKNOWN."""
+    valid = [l for l in labels if l != "UNKNOWN"]
+    if len(valid) == 0:
+        return torch.tensor(SENTINEL_A, dtype=torch.float32)
+    soft = sum(1 for l in valid if l == "YES") / len(valid)
+    return torch.tensor(soft, dtype=torch.float32)
+
+
+def build_soft_label_b(labels: list) -> torch.Tensor:
+    """Task B (NONE/JUDGEMENTAL/DIRECT). '-' → NONE. UNKNOWN excluído.
+    Devolve [SENTINEL_BC] * 3 se todos os votos forem UNKNOWN."""
+    remapped = ["NONE" if l == "-" else l for l in labels if l != "UNKNOWN"]
+    if len(remapped) == 0:
+        return torch.full((len(LABELS_2_2),), SENTINEL_BC, dtype=torch.float32)
+
+    counts = {lbl: 0 for lbl in LABELS_2_2}
+    for l in remapped:
+        if l in counts:
+            counts[l] += 1
+
+    soft = np.array([counts[lbl] / len(remapped) for lbl in LABELS_2_2], dtype=np.float32)
+    return torch.tensor(soft, dtype=torch.float32)
+
+
+def build_soft_label_c(labels: list) -> torch.Tensor:
+    """Task C multilabel, 6 categorias. '-' → NONE. UNKNOWN excluído.
+    Devolve [SENTINEL_BC] * 6 se todos os votos forem UNKNOWN."""
+    remapped = []
+    for ann_labels in labels:
+        cleaned = ["NONE" if lbl == "-" else lbl
+                   for lbl in ann_labels if lbl != "UNKNOWN"]
+        if cleaned:
+            remapped.append(cleaned)
+
+    if len(remapped) == 0:
+        return torch.full((len(LABELS_2_3),), SENTINEL_BC, dtype=torch.float32)
+
+    counts = {lbl: 0 for lbl in LABELS_2_3}
+    for ann_labels in remapped:
+        for lbl in ann_labels:
+            if lbl in counts:
+                counts[lbl] += 1
+
+    soft = np.array([counts[lbl] / len(remapped) for lbl in LABELS_2_3], dtype=np.float32)
+    return torch.tensor(soft, dtype=torch.float32)
+
+
+def tokenize_text(text: str, tokenizer, max_length: int) -> dict:
+    """Tokeniza o transcript com padding e truncation.
+
+    Sem pré-processamento de texto (BUG-F): o transcript do TikTok não tem a estrutura
+    de hashtags/menções que motivou o pipeline do modelo de memes. É decisão registada,
+    não esquecimento.
+    """
+    return tokenizer(
+        text,
+        padding="max_length",
+        truncation=True,
+        max_length=max_length,
+        return_tensors="pt",
+    )
+
+
+# ============================================================================
+# 8. Dataset e collate
+# ============================================================================
+
+class EXISTVideoDataset(Dataset):
+    """Dataset unificado treino/inferência (SIMP-03/DIV-01: antes havia duas cópias
+    divergentes, uma no notebook e outra em `inference_video.py`).
+
+    Devolve SEMPRE `id_EXIST` (str) — é o que torna diagnosticável qualquer
+    desalinhamento por amostra. Exige o `video_collate` abaixo: o
+    `default_data_collator` do HF tentaria `torch.tensor` sobre uma lista de strings.
+    """
+
+    def __init__(self, dataframe, tokenizer, scaler, frames_path, audio_path,
+                 max_length: int = MAX_LENGTH, has_labels: bool = True):
+        self.tokenizer = tokenizer
+        self.scaler = scaler
+        self.frames_path = frames_path
+        self.audio_path = audio_path
+        self.max_length = max_length
+        self.has_labels = has_labels
+
+        self.item_ids = dataframe["id_EXIST"].values
+        self.langs = dataframe["lang"].values
+        self.texts = dataframe["text"].values
+        self.sensorials = dataframe["sensorial"].values
+
+        if has_labels:
+            self.labels_a = dataframe["labels_task3_1"].values
+            self.labels_b = dataframe["labels_task3_2"].values
+            self.labels_c = dataframe["labels_task3_3"].values
+
+    def __len__(self) -> int:
+        return len(self.item_ids)
+
+    def __getitem__(self, idx: int) -> dict:
+        item_id = self.item_ids[idx]
+
+        frames = load_frames(self.frames_path, item_id)
+        audio_features = load_audio_features(self.audio_path, item_id)
+        tokenized = tokenize_text(self.texts[idx], self.tokenizer, self.max_length)
+        bio_vec, cvpc, user_ids = build_bio_vector(
+            self.sensorials[idx], self.langs[idx], self.scaler
+        )
+
+        item = {
+            "id_EXIST":       str(item_id),
+            "frames":         frames,                             # [16, 3, 224, 224]
+            "audio":          audio_features,                     # [1280]
+            "input_ids":      tokenized["input_ids"].squeeze(0),
+            "attention_mask": tokenized["attention_mask"].squeeze(0),
+            "bio_vec":        bio_vec,                            # [16]
+            "cvpc":           cvpc,                               # [1]
+            "user_ids":       user_ids,                           # [2]
+            # `rt_norm` / `fix_norm` NÃO são mais emitidos (SIMP-06). O forward também
+            # deixou de aceitá-los; como `remove_unused_columns=False` encaminha todas as
+            # chaves do dataset e o forward tem `**kwargs`, emiti-los aqui seria um par de
+            # tensores viajando até à GPU em silêncio.
+        }
+        if self.has_labels:
+            item["labels_a"] = build_soft_label_a(self.labels_a[idx])   # escalar
+            item["labels_b"] = build_soft_label_b(self.labels_b[idx])   # [3]
+            item["labels_c"] = build_soft_label_c(self.labels_c[idx])   # [6]
+        return item
+
+
+def video_collate(batch: list) -> dict:
+    """Empilha só os campos tensoriais; devolve `id_EXIST` como lista de strings.
+
+    O `default_data_collator` do HF faria `torch.tensor([...])` sobre as strings e
+    quebraria; um `torch.stack` cego sobre todas as chaves também (SIMP-09).
+    `id_EXIST` chega ao `forward` e é engolido pelo `**kwargs` — é inócuo e é o preço
+    de `remove_unused_columns=False`.
+    """
+    out = {k: torch.stack([b[k] for b in batch])
+           for k in batch[0] if torch.is_tensor(batch[0][k])}
+    if "id_EXIST" in batch[0]:
+        out["id_EXIST"] = [b["id_EXIST"] for b in batch]
+    return out
+
+
+# ============================================================================
+# 9. Split congelado (OPT-06 §6.2 + portão do §6.3)
+# ============================================================================
+
+def _task_a_hard(labels_a_votes) -> str:
+    """Rótulo hard da Task A usado só para estratificar o split."""
+    return "YES" if "YES" in list(labels_a_votes) else "NO"
+
+
+def task_c_val_positive_counts(val_df: pd.DataFrame) -> dict:
+    """Contagem de positivos por categoria da Task C no val candidato.
+
+    Devolve {categoria: (n_com_algum_voto, n_com_maioria)}. `n_com_algum_voto` é a
+    contagem permissiva (proporção > 0) — é a que o portão do §6.3 usa; `n_com_maioria`
+    (proporção ≥ 0,5, que é a regra de binarização do gold hard) é reportada junto
+    porque é ela que governa a estabilidade da busca de limiares.
+    """
+    soft = np.stack([build_soft_label_c(v).numpy()
+                     for v in val_df["labels_task3_3"].values])
+    valid = soft[:, 0] != SENTINEL_BC
+    soft = soft[valid]
+    return {lbl: (int((soft[:, j] > 0).sum()), int((soft[:, j] >= 0.5).sum()))
+            for j, lbl in enumerate(LABELS_2_3)}
+
+
+def _report_task_c_gate(val_df: pd.DataFrame, min_positives: int) -> bool:
+    counts = task_c_val_positive_counts(val_df)
+    print(f"[split] positivos por categoria da Task C no val (n={len(val_df)}):")
+    ok = True
+    for lbl, (any_vote, majority) in counts.items():
+        flag = "" if any_vote >= min_positives else "   ← DÍGITO ÚNICO"
+        print(f"  {lbl:32s} algum voto: {any_vote:4d} | maioria: {majority:4d}{flag}")
+        ok = ok and any_vote >= min_positives
+    return ok
+
+
+def build_frozen_split(full_df: pd.DataFrame,
+                       split_seed: int = SPLIT_SEED,
+                       val_fraction: float = VAL_FRACTION,
+                       min_positives: int = MIN_TASK_C_POSITIVES_VAL,
+                       artifact_path=None,
+                       write: bool = True):
+    """Constrói (ou carrega) o split treino/validação CONGELADO.
+
+    Se o artefato já existe, ele é a verdade: o split é reconstruído a partir da lista
+    de `id_EXIST` gravada. Depois de congelado e commitado, o split NÃO pode mais ser
+    tocado — qualquer mexida posterior é split-shopping e invalida todas as runs.
+
+    Se não existe, constrói o candidato com `train_test_split(random_state=split_seed)`
+    (que cria um `RandomState` local e portanto NÃO consome nem depende do RNG global —
+    é isso que torna a separação SPLIT_SEED × INIT_SEED de facto limpa) e passa pelo
+    PORTÃO do §6.3:
+      1. imprime a contagem de positivos por categoria da Task C no val candidato;
+      2. se alguma categoria ficar com contagem de um dígito, refaz o split
+         estratificando pela chave conjunta (Task A hard × "tem alguma categoria da
+         Task C") e reimprime;
+      3. se AINDA assim alguma categoria ficar de um dígito, RECUSA-SE a gravar o
+         artefato e levanta RuntimeError. É isto que faz disto um portão e não um aviso.
+    """
+    artifact_path = Path(artifact_path or split_artifact_path(split_seed))
+    ids = full_df["id_EXIST"].astype(str).values
+
+    if artifact_path.exists():
+        with open(artifact_path) as f:
+            frozen = json.load(f)
+        train_ids = set(frozen["train_ids"])
+        val_ids = set(frozen["val_ids"])
+        known = set(ids)
+        missing = (train_ids | val_ids) - known
+        if missing:
+            raise RuntimeError(
+                f"{artifact_path} refere {len(missing)} id_EXIST que não estão no "
+                f"dataframe (ex.: {sorted(missing)[:5]}). O artefato congelado e os "
+                f"dados divergiram — NÃO recalcular o split por cima; investigar."
+            )
+        mask_train = np.array([i in train_ids for i in ids])
+        mask_val = np.array([i in val_ids for i in ids])
+        print(f"[split] carregado de {artifact_path} "
+              f"(seed={frozen['split_seed']}, estratificação={frozen['stratify']}): "
+              f"{int(mask_train.sum())} treino / {int(mask_val.sum())} val")
+        return (full_df[mask_train].reset_index(drop=True),
+                full_df[mask_val].reset_index(drop=True))
+
+    strat_a = full_df["labels_task3_1"].apply(_task_a_hard)
+    attempts = [("task_a", strat_a)]
+
+    has_c = full_df["labels_task3_3"].apply(
+        lambda v: "yes" if float(build_soft_label_c(v).numpy()[1:].sum()) > 0 else "no"
+    )
+    attempts.append(("task_a_x_has_task_c", strat_a + "|" + has_c))
+
+    train_df = val_df = None
+    used = None
+    for name, stratify in attempts:
+        print(f"[split] tentando estratificação por '{name}'...")
+        train_df, val_df = train_test_split(
+            full_df, test_size=val_fraction, random_state=split_seed, stratify=stratify,
+        )
+        used = name
+        if _report_task_c_gate(val_df, min_positives):
+            break
+    else:
+        raise RuntimeError(
+            "PORTÃO DO SPLIT (04_RECONCILIATION §6.3): mesmo com estratificação "
+            "conjunta, alguma categoria da Task C fica com contagem de positivos de um "
+            "dígito no val. O artefato NÃO foi gravado. Aumentar VAL_FRACTION ou rever "
+            "a chave de estratificação ANTES de congelar — e nunca depois de ver "
+            "resultados."
+        )
+
+    train_df = train_df.reset_index(drop=True)
+    val_df = val_df.reset_index(drop=True)
+
+    if write:
+        artifact_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(artifact_path, "w") as f:
+            json.dump({
+                "split_seed": split_seed,
+                "val_fraction": val_fraction,
+                "stratify": used,
+                "n_train": len(train_df),
+                "n_val": len(val_df),
+                "train_ids": [str(i) for i in train_df["id_EXIST"].values],
+                "val_ids": [str(i) for i in val_df["id_EXIST"].values],
+            }, f, indent=2)
+        print(f"[split] artefato gravado em {artifact_path} — COMMITAR. "
+              f"A partir daqui o split está congelado.")
+
+    return train_df, val_df
+
+
+# ============================================================================
+# 10. Modelo
+# ============================================================================
+
+class TemporalAttentionPool(nn.Module):
+    """Pooling por atenção aprendida sobre a dimensão temporal.
+
+    Substitui `mean(dim=1)`, que descarta a ordem temporal. Cada token de frame recebe
+    um peso escalar; a saída é a soma ponderada sobre os tokens.
+    """
+
+    def __init__(self, hidden_dim: int, attn_dim: int = 128):
+        super().__init__()
+        self.attn = nn.Sequential(
+            nn.Linear(hidden_dim, attn_dim),
+            nn.Tanh(),
+            nn.Linear(attn_dim, 1),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        logits = self.attn(x)                       # [B, T, 1]
+        weights = torch.softmax(logits, dim=1)      # [B, T, 1]
+        return (weights * x).sum(dim=1)             # [B, D]
+
+
+def fusion_input_dim(use_bio: bool) -> int:
+    """Largura da entrada da fusão — é FUNÇÃO da condição de ablação (OPT-13/ARCH-20).
+
+    Um braço sem bio NÃO carrega um slot de 128 zeros: 2560 em B0, 2688 em B1/B2.
+
+    Nota de honestidade técnica (04_RECONCILIATION §1.1): aqui os zeros seriam
+    algebricamente inertes — não há normalização depois do `cat`, e para uma `Linear`
+    colunas multiplicadas por entrada zero contribuem 0 e recebem gradiente 0. A
+    construção variável é adotada por (a) auditabilidade — "B0 é content-only" passa a
+    ser verificável por `model.fusion[0].in_features == 2560` —, (b) blindagem contra a
+    próxima mudança e (c) contagem de params honesta. NÃO escrever na tese que os zeros
+    distorciam as estatísticas do ramo vivo: isso era verdade no modelo de MEMES, que
+    tinha um LayerNorm global depois da concatenação.
+    """
+    d = VIDEO_DIM + AUDIO_PROJ_DIM + TEXT_DIM          # 768 + 768 + 1024 = 2560
+    if use_bio:
+        d += BIO_HIDDEN_DIM                            # + 128            = 2688
+    return d
+
+
+class EXISTVideoModel(nn.Module):
+    """Modelo multimodal da Task 3.
+
+    As flags de ablação são de CONSTRUÇÃO, não de forward (ARCH-20). Cada condição é um
+    modelo DIFERENTE, treinado do zero, com o seu próprio checkpoint. No sistema antigo
+    elas eram kwargs do `forward` com default `True` e o Trainer nunca as sobrescrevia:
+    o único modelo treinado era sempre `bio + viewer`, e `B0_content_only` media apenas
+    quanto um modelo DEPENDENTE de biosinais se degrada quando se zeram os biosinais na
+    inferência — o que inflava o ganho aparente dos braços com bio.
+
+    Como as chaves `bio_mlp.*` / `viewer_*` simplesmente não existem em B0/B1,
+    `load_state_dict(strict=True)` passa a DETECTAR troca de braço — proteção gratuita
+    contra servir um checkpoint na configuração errada (DIV-02).
+    """
+
+    def __init__(self, videomae, xlmr, *,
+                 use_bio: bool = True, use_viewer_emb: bool = True):
+        super().__init__()
+        if use_viewer_emb and not use_bio:
+            raise ValueError("use_viewer_emb=True exige use_bio=True")
+        self.use_bio = use_bio
+        self.use_viewer_emb = use_viewer_emb
+
+        self.videomae = videomae
+        self.xlmr = xlmr
+        self.video_pool = TemporalAttentionPool(VIDEO_DIM)
+        self.audio_proj = nn.Sequential(
+            nn.Linear(AUDIO_RAW_DIM, AUDIO_PROJ_DIM),
+            nn.GELU(),
+            nn.LayerNorm(AUDIO_PROJ_DIM),      # normalização POR RAMO: permitida
+        )
+
+        if use_bio:
+            # Sem `bio_ln` (ARCH-08). O LayerNorm sobre as 16 features heterogéneas
+            # (diâmetro de pupila em mm, contagem de piscadas, durações em ns, BPM…)
+            # normalizava POR AMOSTRA e desfazia exatamente o que o `RobustScaler`
+            # (ajustado no treino, POR FEATURE, entre amostras) tinha construído,
+            # apagando diferenças de magnitude absoluta entre sujeitos — que é
+            # justamente o sinal biométrico. A opção `BatchNorm1d` foi retirada da mesa:
+            # acopla o resultado ao micro-batch, faz treino e inferência divergirem e
+            # reintroduziria `update_bn` no SWA.
+            self.bio_mlp = nn.Sequential(
+                nn.Linear(BIO_INPUT_DIM, BIO_MLP_HIDDEN), nn.GELU(),
+                nn.Dropout(BIO_DROPOUT),
+                nn.Linear(BIO_MLP_HIDDEN, BIO_HIDDEN_DIM), nn.GELU(),
+            )
+            if use_viewer_emb:
+                self.viewer_emb = nn.Embedding(NUM_VIEWERS, VIEWER_EMB_DIM)
+                self.viewer_proj = nn.Sequential(
+                    nn.Linear(VIEWER_EMB_DIM, VIEWER_PROJ_DIM), nn.Tanh())
+
+        self.fusion_in = fusion_input_dim(use_bio)
+        # ⚠ REGRA (04_RECONCILIATION §1.1): enquanto qualquer braço zerar um slot da
+        # fusão, é PROIBIDO inserir LayerNorm/BatchNorm sobre o vetor CONCATENADO.
+        # Normalizar por ramo (antes do `cat`) é permitido; depois do `cat` não é.
+        # Foi essa exata construção que produziu o confound de modalidade ausente no
+        # modelo de memes.
+        self.fusion = nn.Sequential(
+            nn.Linear(self.fusion_in, FUSION_HIDDEN_DIM), nn.GELU(),
+            nn.Dropout(FUSION_DROPOUT),
+        )
+        self.head_a = nn.Linear(FUSION_HIDDEN_DIM, NUM_TASK_A)
+        self.head_b = nn.Linear(FUSION_HIDDEN_DIM, NUM_TASK_B)
+        self.head_c = nn.Linear(FUSION_HIDDEN_DIM, NUM_TASK_C)
+
+        # Sem `cross_attn` / `cross_proj` / `cross_norm` — ARCH-03 (b).
+        # A cross-attention antiga atendia sobre UMA única key (`vid_proj` com T=1):
+        # softmax sobre 1 elemento é identicamente 1,0. Não era atenção — era um mapa
+        # linear fixo do vetor de vídeo somado ao texto, consumindo ≈ 45 % dos 11,0 M
+        # parâmetros treináveis num dataset de ~2 000 amostras de treino.
+        #
+        # CRITÉRIO DE REABERTURA (04_RECONCILIATION §2.3) — a variante "de verdade"
+        # (atenção sobre os 1 568 tokens temporais) só volta à mesa se houver evidência
+        # de que o vídeo contribui de todo. Teste barato, DEPOIS da tabela de ablação,
+        # sobre checkpoints já treinados:
+        #   probe_zero_video: avaliar B2 com o ramo de vídeo zerado na ENTRADA.
+        # A leitura é DELIBERADAMENTE ASSIMÉTRICA:
+        #   - métricas NÃO caem  → fecha a opção (a), e isso é um achado negativo
+        #     publicável ("o sinal é dominado por texto/áudio");
+        #   - métricas caem nas 3 seeds → NÃO é resultado nenhum; é só um gatilho que
+        #     justifica gastar 3 runs num braço treinado. NUNCA citar a sonda como
+        #     evidência de que o vídeo ajuda.
+        # A sonda é análise separada e NUNCA entra na tabela de ablação. Não existe (e
+        # não deve existir) um caminho de máscara de modalidade em tempo de avaliação
+        # dentro do `forward` — seria reintroduzir exatamente o padrão de flags que o
+        # ARCH-20 matou e voltar a borrar sonda vs ablação.
+
+    def gradient_checkpointing_enable(self, **kwargs):
+        self.videomae.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={"use_reentrant": False})
+        self.xlmr.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={"use_reentrant": False})
+
+    def forward(self, frames, audio, input_ids, attention_mask,
+                bio_vec, cvpc, user_ids,
+                labels_a=None, labels_b=None, labels_c=None,
+                modality_dropout_prob: float = MODALITY_DROPOUT_P,
+                **kwargs):
+        """`**kwargs` é mantido de propósito: `remove_unused_columns=False` encaminha
+        TODAS as chaves do dataset (hoje `id_EXIST`). Nota defensiva do ARCH-02: isso
+        faz `Trainer.model_accepts_loss_kwargs` virar True; hoje é inócuo porque
+        nenhuma chave do batch se chama "labels", mas `MultiTaskTrainer` trava a flag
+        em False para que a escala do gradiente não dependa desse acidente.
+        """
+        B, device = frames.shape[0], frames.device
+
+        # ── Modality dropout: por AMOSTRA, com faixas FIXAS e POSICIONAIS ──────
+        # [0,p) vídeo | [p,2p) áudio | [2p,3p) texto | [3p,4p) bio | resto: nada.
+        # Um braço sem bio simplesmente nunca usa a 4ª faixa, então as taxas de
+        # vídeo/áudio/texto são exatamente `p` em TODOS os braços de ablação. Essa é a
+        # invariante correta (taxa POR MODALIDADE, não taxa total): a formulação antiga
+        # (`elif r < 4*p and use_bio`) deixaria B0 com 15 % de amostras afetadas e B2
+        # com 20 % — uma diferença de força de regularização ENTRE braços, ou seja, um
+        # confound novo que teria explicado parte de qualquer delta B0↔B2.
+        #
+        # O sorteio é por amostra (era um único `torch.rand(1).item()` para o batch
+        # inteiro): com micro-batches maiores, um sorteio derrubaria a modalidade de
+        # todas as amostras de uma vez e o regularizador perderia diversidade.
+        if self.training and modality_dropout_prob > 0:
+            r = torch.rand(B, device=device)                    # ∈ [0, 1)
+            p = modality_dropout_prob
+            # band: 0=vídeo, 1=áudio, 2=texto, 3=bio, 4=nada derrubado.
+            # As 4 faixas são estruturalmente idênticas — é isto que torna a invariante
+            # legível no código, e não apenas afirmada no comentário.
+            band = torch.clamp((r / p).floor(), max=4.0)
+            keep_video = band != 0
+            keep_audio = band != 1
+            keep_text = band != 2
+            keep_bio = band != 3
+        else:
+            keep_video = keep_audio = keep_text = keep_bio = None
+
+        def _mask(x, keep):
+            # Cast no ponto de uso: evita promover bf16→fp32 no `cat` sob autocast.
+            # Não há mais tensores de preenchimento (`self._zeros`/`ref_dtype`
+            # desapareceram por construção) — as máscaras multiplicam tensores vivos.
+            return x if keep is None else x * keep.to(x.dtype).unsqueeze(-1)
+
+        vid_feat = _mask(self.video_pool(
+            self.videomae(pixel_values=frames).last_hidden_state), keep_video)   # [B, 768]
+        aud_feat = _mask(self.audio_proj(audio), keep_audio)                     # [B, 768]
+        txt_feat = _mask(self.xlmr(input_ids=input_ids,
+                                   attention_mask=attention_mask
+                                   ).last_hidden_state[:, 0, :], keep_text)      # [B, 1024]
+
+        parts = [vid_feat, aud_feat, txt_feat]
+        if self.use_bio:
+            if self.use_viewer_emb:
+                # Baseline fisiológica por avaliador (Tanh-limitada a ±1, subtraída de
+                # features robust-scaled com IQR ≈ 1 — ou seja, desloca no máximo ~1 IQR).
+                base = (self.viewer_proj(self.viewer_emb(user_ids[:, 0])) +
+                        self.viewer_proj(self.viewer_emb(user_ids[:, 1]))) / 2
+                bio_in = bio_vec - base
+            else:
+                bio_in = bio_vec
+            parts.append(_mask(self.bio_mlp(
+                torch.cat([bio_in, cvpc], dim=-1)), keep_bio))                   # [B, 128]
+
+        fused = self.fusion(torch.cat(parts, dim=-1))                            # [B, 1024]
+        logits_a = self.head_a(fused).squeeze(-1)   # [B]
+        logits_b = self.head_b(fused)               # [B, 3]
+        logits_c = self.head_c(fused)               # [B, 6]
+
+        if labels_a is None:
+            return (logits_a, logits_b, logits_c)
+
+        loss, loss_components = compute_loss(
+            logits_a, logits_b, logits_c, labels_a, labels_b, labels_c,
+            return_components=True,
+        )
+        if loss.dim() != 0:
+            loss = loss.mean()
+        # Guarda as perdas por task para o MultiTaskTrainer logar.
+        self._last_loss_components = loss_components
+        return (loss, logits_a, logits_b, logits_c)
+
+
+def make_lora_config():
+    """Configuração LoRA única (SIMP-14: estava repetida 5 vezes, entre notebook e
+    `inference_video.py`, com risco de divergirem sem aviso)."""
+    from peft import LoraConfig
+    return LoraConfig(
+        r=LORA_R,
+        lora_alpha=LORA_ALPHA,
+        lora_dropout=LORA_DROPOUT,
+        target_modules=list(LORA_TARGET_MODULES),
+    )
+
+
+def restore_videomae_qv_biases(videomae, model_name: str = VIDEOMAE_NAME) -> int:
+    """ARCH-01 (CRÍTICO) — restaura os `q_bias`/`v_bias` pré-treinados do VideoMAE.
+
+    O `transformers` v5 refatorou a self-attention do VideoMAE de `qkv` + `q_bias`/
+    `v_bias` separados para `query`/`key`/`value` padrão com bias, e o mapeamento de
+    chaves para este checkpoint FALHA: o relatório de load lista `q_bias`/`v_bias` como
+    UNEXPECTED e `query.bias`/`key.bias`/`value.bias` como MISSING → newly initialized.
+    Os biases treinados são descartados e substituídos por init novo.
+
+    Magnitudes lidas do checkpoint oficial: ‖q_bias‖₂ ≈ 12,93 por camada (min 10,47 /
+    máx 17,76) contra ‖linha de query.weight‖₂ ≈ 1,37. Zerá-los altera materialmente o
+    padrão de atenção de TODAS as 12 camadas — é o candidato nº 1 para explicar por que
+    o ramo de vídeo contribui tão pouco.
+
+    ⚠ Chamar SEMPRE ANTES de `get_peft_model` (o PEFT embrulha os módulos e os caminhos
+    de atributo mudam), tanto no build quanto no load de um checkpoint enxuto.
+    ⚠ Os biases restaurados são FROZEN: não entram no state_dict enxuto do OPT-03, e
+    por isso a restauração TEM de ser reaplicada no load — senão o modelo servido
+    diverge do treinado, silenciosamente.
+    ⚠ O caminho de atributo (`layer.attention.attention.query.bias`) vem do relatório de
+    MISSING keys da própria v5 e NÃO foi confirmado com execução. Se estiver errado,
+    esta função falha ALTO, com o diagnóstico na mensagem — nunca em silêncio.
+
+    Devolve o número de camadas restauradas.
+    """
+    from huggingface_hub import hf_hub_download
+    import safetensors.torch as st
+
+    sd = st.load_file(hf_hub_download(model_name, "model.safetensors"))
+    restored = 0
+    layers = videomae.encoder.layer
+    for i, layer in enumerate(layers):
+        try:
+            attn = layer.attention.attention
+            q_bias_param = attn.query.bias
+            v_bias_param = attn.value.bias
+        except AttributeError as e:
+            raise RuntimeError(
+                "restore_videomae_qv_biases: caminho de atributo inesperado na camada "
+                f"{i} ({e}). Confirmar a estrutura de módulos NESTA versão do "
+                "transformers com:\n"
+                "  print([n for n, _ in videomae.named_parameters() "
+                "if 'layer.0.attention' in n])\n"
+                "e ajustar esta função. NÃO seguir sem os biases restaurados: o encoder "
+                "de vídeo roda com atenção pré-treinada corrompida (ARCH-01)."
+            ) from e
+        if q_bias_param is None or v_bias_param is None:
+            raise RuntimeError(
+                f"restore_videomae_qv_biases: camada {i} não tem bias em query/value — "
+                "esta versão do transformers pode já mapear q_bias/v_bias corretamente. "
+                "Verificar o LOAD REPORT do from_pretrained antes de remendar."
+            )
+        qb = sd[f"videomae.encoder.layer.{i}.attention.attention.q_bias"]
+        vb = sd[f"videomae.encoder.layer.{i}.attention.attention.v_bias"]
+        q_bias_param.data.copy_(qb.to(q_bias_param.dtype))
+        v_bias_param.data.copy_(vb.to(v_bias_param.dtype))
+        key_bias = getattr(attn.key, "bias", None)
+        if key_bias is not None:
+            key_bias.data.zero_()          # o VideoMAE não tem k_bias por design
+        restored += 1
+
+    assert restored == len(layers), (
+        f"restore_videomae_qv_biases: {restored} de {len(layers)} camadas restauradas")
+    print(f"[fix ARCH-01] q_bias/v_bias restaurados em {restored} camadas do VideoMAE")
+    return restored
+
+
+def build_backbones(init_seed: int = INIT_SEED, restore_biases: bool = True):
+    """Constrói os dois backbones com LoRA, na ordem e com o re-seed do protocolo de
+    determinismo (as matrizes LoRA A são aleatórias, então o init não pode depender de
+    quanto RNG foi consumido antes).
+
+    Devolve (videomae, xlmr). O `EXISTVideoModel` é instanciado à parte, DEPOIS de mais
+    um `set_all_seeds(init_seed)`.
+    """
+    from peft import get_peft_model
+
+    set_all_seeds(init_seed)
+    videomae = VideoMAEModel.from_pretrained(VIDEOMAE_NAME)
+    if restore_biases:
+        restore_videomae_qv_biases(videomae)     # ANTES do get_peft_model
+    videomae = get_peft_model(videomae, make_lora_config())
+
+    set_all_seeds(init_seed)
+    xlmr = XLMRobertaModel.from_pretrained(XLMR_NAME)
+    xlmr = get_peft_model(xlmr, make_lora_config())
+
+    return videomae, xlmr
+
+
+def build_model(init_seed: int = INIT_SEED, *, use_bio: bool = True,
+                use_viewer_emb: bool = True, restore_biases: bool = True):
+    """Caminho único de construção: backbones + `EXISTVideoModel` na condição pedida."""
+    videomae, xlmr = build_backbones(init_seed, restore_biases=restore_biases)
+    set_all_seeds(init_seed)   # re-seed antes do init das camadas novas
+    return EXISTVideoModel(videomae, xlmr,
+                           use_bio=use_bio, use_viewer_emb=use_viewer_emb)
+
+
+def count_params(model: nn.Module) -> dict:
+    total = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    return {"total": total, "trainable": trainable,
+            "trainable_pct": 100 * trainable / max(total, 1)}
+
+
+def forward_sanity_check(model, dataset, device="cuda"):
+    """Um forward de uma amostra, imprimindo shapes e contagem de parâmetros."""
+    model.eval()
+    batch = video_collate([dataset[0]])
+    batch = {k: (v.to(device) if torch.is_tensor(v) else v) for k, v in batch.items()}
+    with torch.no_grad():
+        out = model(**batch)
+    print("─── Forward sanity check ───")
+    if len(out) == 4:
+        loss, la, lb, lc = out
+        print(f"  loss      : {loss.item():.4f}")
+    else:
+        la, lb, lc = out
+    print(f"  fusion_in : {model.fusion_in}")
+    print(f"  logits_a  : {tuple(la.shape)}")
+    print(f"  logits_b  : {tuple(lb.shape)}")
+    print(f"  logits_c  : {tuple(lc.shape)}")
+    print(f"  params    : {count_params(model)}")
+
+
+# ============================================================================
+# 11. Perdas
+# ============================================================================
+
+def loss_task_a(logits_a, labels_a):
+    """BCE com logits, targets soft. A sentinela SENTINEL_A mascara linhas vazias.
+
+    CONVENÇÃO: `sigmoid(logits_a) = P(YES)` — o alvo é a proporção de votos YES.
+    """
+    mask = (labels_a != SENTINEL_A).float()
+    if mask.sum() == 0:
+        return torch.tensor(0.0, device=logits_a.device)
+    loss = F.binary_cross_entropy_with_logits(
+        logits_a, labels_a.clamp(0, 1), reduction="none"
+    )
+    return (loss * mask).sum() / mask.sum()
+
+
+def loss_task_b(logits_b, labels_b):
+    """Cross-entropia soft (a `CrossEntropyLoss` não aceita targets soft).
+    A sentinela SENTINEL_BC na primeira coluna marca linhas vazias."""
+    mask = (labels_b[:, 0] != SENTINEL_BC).float()
+    if mask.sum() == 0:
+        return torch.tensor(0.0, device=logits_b.device)
+    log_pb = F.log_softmax(logits_b, dim=-1)
+    loss = -(labels_b.clamp(0, 1) * log_pb).sum(dim=-1)
+    return (loss * mask).sum() / mask.sum()
+
+
+def loss_task_c(logits_c, labels_c):
+    """BCE por classe (as categorias não somam 1). Sentinela SENTINEL_BC mascara vazias.
+
+    O `.mean(dim=-1)` sobre as 6 classes — contra o `.sum(dim=-1)` da Task B — deixa o
+    gradiente efetivo da Task C ~1/6 por unidade de erro em relação ao de B, apesar do
+    peso externo igual (ARCH-17.2). Isso é HIPÓTESE de melhoria, não bug: mudar para
+    `sum` é candidato à triagem barata com backbones congelados (OPT-09), nunca uma
+    alteração silenciosa do baseline.
+    """
+    mask = (labels_c[:, 0] != SENTINEL_BC).float()
+    if mask.sum() == 0:
+        return torch.tensor(0.0, device=logits_c.device)
+    loss = F.binary_cross_entropy_with_logits(
+        logits_c, labels_c.clamp(0, 1), reduction="none"
+    ).mean(dim=-1)
+    return (loss * mask).sum() / mask.sum()
+
+
+def compute_loss(logits_a, logits_b, logits_c,
+                 labels_a, labels_b, labels_c,
+                 return_components: bool = False):
+    la = loss_task_a(logits_a, labels_a)
+    lb = loss_task_b(logits_b, labels_b)
+    lc = loss_task_c(logits_c, labels_c)
+    total = LOSS_W_A * la + LOSS_W_B * lb + LOSS_W_C * lc
+    if return_components:
+        return total, {"loss_a": la.detach(), "loss_b": lb.detach(), "loss_c": lc.detach()}
+    return total
+
+
+# ============================================================================
+# 12. Métricas (PyEvALL) + proxies do sklearn
+# ============================================================================
+
+def _metric_list(task: str, evaluation: str) -> list:
+    if evaluation == 'hard':
+        return ['ICM', 'ICMNorm', 'FMeasure']
+    if task == '2_3':
+        return ['ICMSoft', 'ICMSoftNorm']
+    return ['ICMSoft', 'ICMSoftNorm', 'CrossEntropy']
+
+
+def _extract_metrics_from_report(report, metric_list) -> dict:
+    """Puxa os valores das métricas de dentro do relatório do PyEvALL.
+
+    ARCH-14: métricas ausentes ou com `status != 'OK'` devolvem `nan` em vez de serem
+    OMITIDAS. Omitir fazia a coluna DESAPARECER da tabela do Trainer sem erro — numa
+    série de 9–12 runs desatendidas, uma métrica que some sem aviso custa uma onda
+    inteira de GPU.
+    """
+    results = {m: float("nan") for m in metric_list}
+    if not hasattr(report, 'report') or 'metrics' not in report.report:
+        return results
+
+    metrics_dict = report.report['metrics']
+    for metric in metric_list:
+        if metric not in metrics_dict:
+            continue
+        if metrics_dict[metric].get('status') != 'OK':
+            continue
+        try:
+            results[metric] = float(
+                metrics_dict[metric]['results']['average_per_test_case']
+            )
+        except (KeyError, TypeError, ValueError):
+            pass
+    return results
+
+
+def _format_for_pyevall(probs, sample_ids, task, evaluation, thresholds_c=None,
+                        test_case: str = TEST_CASE) -> list:
+    """Converte arrays de probabilidade para o formato JSON que o PyEvALL espera.
+
+    thresholds_c: lista opcional de 6 floats, usada só na Task C modo 'hard'.
+    Sem arredondamento das probabilidades soft (DIV-04: `inference_video.py` fazia
+    `round(v, 6)` só por legibilidade do JSON; a versão do treino, sem arredondamento,
+    é a canónica).
+    """
+    out = []
+    for i, sid in enumerate(sample_ids):
+        entry = {"test_case": test_case, "id": str(sid)}
+
+        if task == '2_1':
+            # Eixo -1 = TASK_A_PROB_ORDER = ("NO", "YES") — indexado, não posicional
+            # por acaso. Ver DIV-07 e selfcheck_task_a_convention().
+            p_no = float(probs[i][IDX_NO])
+            p_yes = float(probs[i][IDX_YES])
+            if evaluation == 'hard':
+                entry["value"] = "YES" if p_yes >= p_no else "NO"
+            else:
+                entry["value"] = {"YES": p_yes, "NO": p_no}
+
+        elif task == '2_2':
+            label_map = {"NONE": "NO", "JUDGEMENTAL": "JUDGEMENTAL", "DIRECT": "DIRECT"}
+            relevant = {label_map[lbl]: float(probs[i][idx])
+                        for idx, lbl in enumerate(LABELS_2_2)}
+            if evaluation == 'hard':
+                entry["value"] = max(relevant, key=relevant.get)
+            else:
+                entry["value"] = relevant
+
+        elif task == '2_3':
+            label_map = {"NONE": "NO"}
+            label_map.update({lbl: lbl for lbl in LABELS_2_3[1:]})
+            relevant = {label_map[lbl]: float(probs[i][idx])
+                        for idx, lbl in enumerate(LABELS_2_3)}
+
+            if evaluation == 'hard':
+                threshs = thresholds_c if thresholds_c is not None else [0.5] * len(LABELS_2_3)
+                thresh_map = {label_map[lbl]: threshs[idx]
+                              for idx, lbl in enumerate(LABELS_2_3)}
+                # ARCH-10: a regra antiga (`todos os que batem o limiar`) permitia
+                # emitir "NO" JUNTO com categorias de sexismo — sob a hierarquia
+                # declarada isso é uma predição autocontraditória, e o ICM hierárquico
+                # penaliza. O risco era amplificado pela busca de limiares (limiares de
+                # 0,05 tornam a coocorrência comum).
+                cats = [lbl for lbl, p in relevant.items()
+                        if lbl != "NO" and p >= thresh_map[lbl]]
+                if cats:
+                    entry["value"] = cats                    # decidiu YES → só categorias
+                elif relevant["NO"] >= thresh_map["NO"]:
+                    entry["value"] = ["NO"]                  # decidiu NO → só NO
+                else:
+                    best = max((l for l in relevant if l != "NO"),
+                               key=lambda l: relevant[l])
+                    entry["value"] = [best]
+            else:
+                entry["value"] = relevant
+
+        out.append(entry)
+    return out
+
+
+def _run_pyevall(probs, gold_dist, sample_ids, task, evaluation,
+                 temp_dir='./pyevall_temp_train', thresholds_c=None) -> dict:
+    """Roda o PyEvALL uma vez, para uma task e um modo de avaliação.
+
+    ⚠ Aviso de comparabilidade (ARCH-10): `_format_for_pyevall` é aplicado TAMBÉM ao
+    gold. A correção do ramo hard da Task C muda, portanto, os rótulos gold (as ~0,7 %
+    de linhas contraditórias desaparecem). Todos os números de Task C hard já reportados
+    (`ablation_results.csv`, `ablation_seed_*.csv`, `ablation_results.tex`, os campos
+    `scores` dos `task_c_thresholds_seed_*.json`) passam a ser NÃO comparáveis com os
+    novos. Não misturar as duas gerações na mesma tabela do paper.
+    """
+    os.makedirs(temp_dir, exist_ok=True)
+    metric_list = _metric_list(task, evaluation)
+
+    preds = _format_for_pyevall(probs, sample_ids, task, evaluation,
+                                thresholds_c=thresholds_c)
+    # `thresholds_c` NÃO é passado ao gold: o gold é a distribuição real de votos e o
+    # PyEvALL/formatter binariza com a regra padrão.
+    gold = _format_for_pyevall(gold_dist, sample_ids, task, evaluation)
+
+    pred_path = f'{temp_dir}/pred_{task}_{evaluation}.json'
+    gold_path = f'{temp_dir}/gold_{task}_{evaluation}.json'
+    with open(pred_path, 'w') as f:
+        json.dump(preds, f)
+    with open(gold_path, 'w') as f:
+        json.dump(gold, f)
+
+    params = {}
+    if task == '2_2':
+        params[PyEvALLUtils.PARAM_HIERARCHY] = TASK_2_2_HIERARCHY
+    elif task == '2_3':
+        params[PyEvALLUtils.PARAM_HIERARCHY] = TASK_2_3_HIERARCHY
+
+    try:
+        evaluator = PyEvALLEvaluation()
+        report = evaluator.evaluate(pred_path, gold_path, metric_list, **params)
+        return _extract_metrics_from_report(report, metric_list)
+    except Exception as e:
+        print(f"  ! PyEvALL falhou para task {task} ({evaluation}): {e}")
+        # ARCH-14: nan explícito, nunca `{}` — a chave TEM de aparecer na tabela.
+        return {m: float("nan") for m in metric_list}
+
+
+def _search_thresholds_task_c(probs_c, targets_c, ids_c, temp_dir):
+    """Busca gulosa por coordenada sobre os limiares por classe da Task C (ICMNorm hard).
+
+    Ajusta uma classe de cada vez, mantendo as outras fixas.
+
+    A classe `NONE` é EXCLUÍDA do grid e fica em 0,5. Justificativa: com a regra hard do
+    ARCH-10, o limiar de NONE só entra em jogo quando nenhuma categoria bate o seu
+    limiar, e deixá-lo livre era um grau de liberdade que só servia para produzir
+    predições contraditórias. (NÃO justificar isto por economia de chamadas ao PyEvALL:
+    as 72 chamadas custam 22,9 s medidos — a economia seria de ~4 s.)
+
+    ⚠ Rodar SÓ UMA VEZ, pós-treino. Rodar a cada época ajusta os limiares ao ruído do
+    dev set (vazamento nº 2 do precedente dos memes).
+    """
+    best_thresholds = [0.5] * len(LABELS_2_3)
+
+    for class_idx in range(1, len(LABELS_2_3)):     # índice 0 = NONE, fora do grid
+        best_t = best_thresholds[class_idx]
+        best_icm = -np.inf
+
+        for t in THRESHOLD_GRID:
+            candidate = best_thresholds.copy()
+            candidate[class_idx] = float(t)
+            scores = _run_pyevall(probs_c, targets_c, ids_c, '2_3', 'hard',
+                                  temp_dir=temp_dir, thresholds_c=candidate)
+            icm = scores.get('ICMNorm', float("nan"))
+            if not np.isnan(icm) and icm > best_icm:
+                best_icm = icm
+                best_t = float(t)
+
+        best_thresholds[class_idx] = best_t
+
+    final_scores = _run_pyevall(probs_c, targets_c, ids_c, '2_3', 'hard',
+                                temp_dir=temp_dir, thresholds_c=best_thresholds)
+    return best_thresholds, final_scores
+
+
+def _proxy_metrics(logits_a, labels_a, logits_b, labels_b, logits_c, labels_c) -> dict:
+    """Métricas proxy do sklearn, independentes do PyEvALL (ARCH-14).
+
+    Servem como DIAGNÓSTICO: se uma métrica do PyEvALL vier `nan` mas o proxy
+    correspondente estiver saudável, o problema é do PyEvALL/formato, não do modelo.
+    Nunca reportar estas no paper — a métrica oficial é a ICM.
+    """
+    out = {}
+
+    mask_a = labels_a != SENTINEL_A
+    if mask_a.any():
+        p_yes = 1 / (1 + np.exp(-logits_a[mask_a].reshape(-1)))
+        y_true = (labels_a[mask_a] >= 0.5).astype(int)
+        out['proxy_task_a_f1'] = float(
+            f1_score(y_true, (p_yes >= 0.5).astype(int), average='macro', zero_division=0))
+        if len(np.unique(y_true)) == 2:
+            out['proxy_task_a_auc'] = float(roc_auc_score(y_true, p_yes))
+        else:
+            out['proxy_task_a_auc'] = float("nan")
+
+    mask_b = labels_b[:, 0] != SENTINEL_BC
+    if mask_b.any():
+        out['proxy_task_b_f1'] = float(f1_score(
+            labels_b[mask_b].argmax(axis=-1), logits_b[mask_b].argmax(axis=-1),
+            average='macro', zero_division=0))
+
+    mask_c = labels_c[:, 0] != SENTINEL_BC
+    if mask_c.any():
+        probs_c = 1 / (1 + np.exp(-logits_c[mask_c]))
+        out['proxy_task_c_f1'] = float(f1_score(
+            (labels_c[mask_c] >= 0.5).astype(int), (probs_c >= 0.5).astype(int),
+            average='macro', zero_division=0))
+
+    return out
+
+
+def _metrics_task_a(logits_a, labels_a, temp_dir) -> dict:
+    """Task A. Devolve {} se nenhuma amostra tem voto válido."""
+    metrics = {}
+    # A guarda herdada do modelo de memes (`labels_a` vindo [N, 2]) é aplicada UMA vez,
+    # em `compute_metrics`, para que métricas e proxies vejam exatamente o mesmo array.
+    mask_a = labels_a != SENTINEL_A
+    if not mask_a.any():
+        return metrics
+
+    # CONVENÇÃO DO MODELO DE VÍDEO: sigmoid(logit_a) = P(YES); eixo [P(NO), P(YES)].
+    prob_yes = 1 / (1 + np.exp(-logits_a[mask_a].reshape(-1)))
+    probs_a = np.stack([1 - prob_yes, prob_yes], axis=-1)
+    targets_a = np.stack([1 - labels_a[mask_a], labels_a[mask_a]], axis=-1)
+    ids_a = [str(i) for i in range(len(probs_a))]
+
+    for evaluation in ('hard', 'soft'):
+        for k, v in _run_pyevall(probs_a, targets_a, ids_a, '2_1', evaluation,
+                                 temp_dir=temp_dir).items():
+            metrics[f'task_a_{k.lower()}_{evaluation}'] = v
+    return metrics
+
+
+def _metrics_task_b(logits_b, labels_b, temp_dir) -> dict:
+    """Task B. Devolve {} se nenhuma amostra tem voto válido."""
+    metrics = {}
+    mask_b = labels_b[:, 0] != SENTINEL_BC
+    if not mask_b.any():
+        return metrics
+
+    x = logits_b[mask_b]
+    x = x - x.max(axis=-1, keepdims=True)          # estabilidade numérica do softmax
+    probs_b = np.exp(x) / np.exp(x).sum(axis=-1, keepdims=True)
+    targets_b = labels_b[mask_b]
+    ids_b = [str(i) for i in range(len(probs_b))]
+
+    for evaluation in ('hard', 'soft'):
+        for k, v in _run_pyevall(probs_b, targets_b, ids_b, '2_2', evaluation,
+                                 temp_dir=temp_dir).items():
+            metrics[f'task_b_{k.lower()}_{evaluation}'] = v
+    return metrics
+
+
+def _metrics_task_c(logits_c, labels_c, temp_dir) -> dict:
+    """Task C. Devolve {} se nenhuma amostra tem voto válido.
+
+    Threshold FIXO em 0,5 aqui. A busca de limiares roda uma única vez, pós-treino, em
+    `tune_task_c_thresholds()`. Rodar por época vazaria o set de validação.
+    ⚠ A chave `task_c_..._hard` significa "threshold 0,5" NESTE modelo e "threshold
+    ajustado" no `memes_core.py`. Mesmo nome, significados diferentes.
+
+    A ordem ('soft', 'hard') é assimétrica em relação a A e B (('hard', 'soft')) de
+    propósito: reproduz a ordem de inserção do código original, para que o dicionário de
+    métricas saia com as mesmas chaves na mesma ordem. Não "uniformizar".
+    """
+    metrics = {}
+    mask_c = labels_c[:, 0] != SENTINEL_BC
+    if not mask_c.any():
+        return metrics
+
+    probs_c = 1 / (1 + np.exp(-logits_c[mask_c]))
+    targets_c = labels_c[mask_c]
+    ids_c = [str(i) for i in range(len(probs_c))]
+
+    for evaluation in ('soft', 'hard'):
+        for k, v in _run_pyevall(probs_c, targets_c, ids_c, '2_3', evaluation,
+                                 temp_dir=temp_dir).items():
+            metrics[f'task_c_{k.lower()}_{evaluation}'] = v
+    return metrics
+
+
+def _unpack_predictions(preds):
+    """Desempacotamento defensivo do que o Trainer devolve em `predictions`."""
+    if isinstance(preds, tuple) and len(preds) == 3:
+        return preds
+    if isinstance(preds, list) and len(preds) == 3:
+        return tuple(preds)
+    if isinstance(preds, dict):
+        try:
+            return preds["logits_a"], preds["logits_b"], preds["logits_c"]
+        except KeyError as e:
+            raise RuntimeError(
+                f"Dict de predições sem a chave esperada {e}. Chaves: {list(preds.keys())}"
+            )
+    if isinstance(preds, np.ndarray):
+        raise RuntimeError(
+            "As predições voltaram como um único ndarray — esperava-se a 3-tupla "
+            "(logits_a, logits_b, logits_c). Verificar o retorno do forward."
+        )
+    raise TypeError(f"Tipo de predição inesperado: {type(preds)}")
+
+
+def compute_metrics(eval_pred) -> dict:
+    """Métricas de avaliação por época.
+
+    Assinatura de UM argumento (SIMP-05): o antigo parâmetro `tune_thresholds_c` nunca
+    era passado por nenhum chamador, e era só por causa desse default que o modelo de
+    vídeo escapava do vazamento de validação nº 2 do precedente dos memes. Agora essa
+    propriedade é ESTRUTURAL: a busca de limiares só existe em
+    `tune_task_c_thresholds()`, que roda pós-treino.
+
+    Depende de `trainer.label_names = ["labels_a", "labels_b", "labels_c"]` para que
+    `eval_pred.label_ids` seja uma 3-tupla.
+    """
+    logits_a, logits_b, logits_c = _unpack_predictions(eval_pred.predictions)
+    labels_a, labels_b, labels_c = eval_pred.label_ids
+    logits_a, logits_b, logits_c = map(np.asarray, (logits_a, logits_b, logits_c))
+    labels_a, labels_b, labels_c = map(np.asarray, (labels_a, labels_b, labels_c))
+
+    # Guarda herdada do modelo de memes: lá `labels_a` vinha [N, 2]; aqui é sempre [N].
+    # É barata e protege contra uma mudança de formato do collator — mas TEM de ser
+    # aplicada aqui, uma vez só: se ficasse dentro de `_metrics_task_a` (que trabalha
+    # numa cópia local), `_proxy_metrics` receberia o array [N, 2] e `logits_a[mask_a]`
+    # levantaria, derrubando `compute_metrics` inteiro — exatamente o oposto do ARCH-14.
+    if labels_a.ndim == 2:
+        labels_a = labels_a[:, 1]
+
+    metrics = {}
+    with tempfile.TemporaryDirectory() as temp_dir:
+        metrics.update(_metrics_task_a(logits_a, labels_a, temp_dir))
+        metrics.update(_metrics_task_b(logits_b, labels_b, temp_dir))
+        metrics.update(_metrics_task_c(logits_c, labels_c, temp_dir))
+    metrics.update(_proxy_metrics(logits_a, labels_a, logits_b, labels_b,
+                                  logits_c, labels_c))
+    return metrics
+
+
+# ============================================================================
+# 13. Ajuste de limiares da Task C — pós-treino, em metade do val
+# ============================================================================
+
+def split_val_halves(n: int, split_seed: int = SPLIT_SEED):
+    """Divide `n` índices em duas metades determinísticas (ARCH-11 b).
+
+    Usa `RandomState(split_seed)` — um gerador LOCAL, que não consome nem depende do
+    RNG global, para que a divisão seja a mesma em todas as runs e não interfira no
+    protocolo de determinismo do treino.
+    """
+    perm = np.random.RandomState(split_seed).permutation(n)
+    return perm[: n // 2], perm[n // 2:]
+
+
+def tune_task_c_thresholds(trainer, eval_dataset, save_path=None,
+                           split_seed: int = SPLIT_SEED):
+    """Ajusta os limiares por classe da Task C numa metade do val e REPORTA na outra.
+
+    ARCH-11 (b): antes, os limiares eram ajustados e reportados no MESMO conjunto de
+    validação, e a dispersão entre seeds era grande (STEREOTYPING-DOMINANCE variou 5×).
+    Com o split congelado (OPT-06) e o val a 80/20 (OPT-11, ~505 amostras), cada metade
+    tem ~252 — o tamanho do val INTEIRO do sistema antigo.
+
+    ⚠ ASSIMETRIA A DECLARAR NA TESE: o número de Task C hard reportado por esta função
+    vem de ~metade do val, enquanto Task A/B (de `compute_metrics`) vêm do val inteiro.
+    Não colocar os dois lado a lado sem essa nota.
+
+    ⚠ Rodar SÓ UMA VEZ, depois do treino. Nunca durante.
+    """
+    print("[Threshold tuning] Gerando predições no conjunto de validação...")
+    pred_out = trainer.predict(eval_dataset)
+
+    logits_a, logits_b, logits_c = _unpack_predictions(pred_out.predictions)
+    labels_a, labels_b, labels_c = pred_out.label_ids
+    logits_c = np.asarray(logits_c)
+    labels_c = np.asarray(labels_c)
+
+    mask_c = labels_c[:, 0] != SENTINEL_BC
+    if not mask_c.any():
+        print("[Threshold tuning] Nenhuma amostra válida da Task C — ignorando.")
+        return None
+
+    probs_c = 1 / (1 + np.exp(-logits_c[mask_c]))
+    targets_c = labels_c[mask_c]
+
+    idx_tune, idx_report = split_val_halves(len(probs_c), split_seed)
+    ids_tune = [str(i) for i in range(len(idx_tune))]
+    ids_report = [str(i) for i in range(len(idx_report))]
+    print(f"[Threshold tuning] metade de AJUSTE: {len(idx_tune)} amostras | "
+          f"metade de REPORTE: {len(idx_report)} amostras")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        best_thresholds, scores_on_tune = _search_thresholds_task_c(
+            probs_c[idx_tune], targets_c[idx_tune], ids_tune, temp_dir
+        )
+        scores_on_report = _run_pyevall(
+            probs_c[idx_report], targets_c[idx_report], ids_report, '2_3', 'hard',
+            temp_dir=temp_dir, thresholds_c=best_thresholds)
+        scores_default_report = _run_pyevall(
+            probs_c[idx_report], targets_c[idx_report], ids_report, '2_3', 'hard',
+            temp_dir=temp_dir, thresholds_c=None)
+
+    result = {
+        "thresholds": best_thresholds,
+        "label_order": LABELS_2_3,
+        "split_seed": split_seed,
+        "n_tune": int(len(idx_tune)),
+        "n_report": int(len(idx_report)),
+        "scores_on_tune_half": scores_on_tune,
+        "scores_on_report_half": scores_on_report,
+        "scores_on_report_half_default_0.5": scores_default_report,
+        "note": ("Limiares ajustados na metade de AJUSTE e aplicados à metade de "
+                 "REPORTE. O número reportável é `scores_on_report_half`. "
+                 "`NONE` fica fixo em 0.5 por construção (ARCH-10)."),
+    }
+
+    print("[Threshold tuning] Limiares por classe (metade de ajuste):")
+    for lbl, t in zip(LABELS_2_3, best_thresholds):
+        marca = "  (fixo — fora do grid)" if lbl == "NONE" else ""
+        print(f"  {lbl:32s}: {t:.2f}{marca}")
+    print(f"[Threshold tuning] Task C hard ICMNorm na metade de REPORTE: "
+          f"ajustado={scores_on_report.get('ICMNorm', float('nan')):.4f} | "
+          f"padrão 0,5={scores_default_report.get('ICMNorm', float('nan')):.4f}")
+
+    if save_path:
+        with open(save_path, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"[Threshold tuning] Gravado em {save_path}")
+
+    return result
+
+
+# ============================================================================
+# 14. Peças do treino
+# ============================================================================
+# SEM SWACallback (ARCH-16). Removido, não desativado:
+#   - o SWA média as épocas da CAUDA de overfitting e o modelo final ficava pior que a
+#     época 4/6 em TODAS as seis métricas reportadas (Task A ICMNorm hard: 0,6199 →
+#     0,5647);
+#   - `swa_lr` era aceito e nunca usado (nenhum `SWALR` era criado), então o SWA rodava
+#     sob o cosine a decair para ~0 — média de pesos sob LR decrescente é quase "pegar
+#     os pesos do fim";
+#   - `AveragedModel` duplicava os 657 M params na GPU durante o treino inteiro
+#     (≈ 2,6 GB) — memória que financia o aumento de micro-batch.
+# A escolha do orçamento de épocas passa a ser feita pela run de calibração
+# (NUM_TRAIN_EPOCHS_PROVISIONAL / CALIBRATION_EPOCHS acima), não pelo SWA.
+
+
+class MultiTaskTrainer(Trainer):
+    """Loga as perdas por task ao lado da perda total.
+
+    É puramente observacional — não muda a otimização. Os valores loss_a/loss_b/loss_c
+    servem para decidir se a ponderação fixa 1,0/0,7/0,7 está equilibrada.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # ARCH-02 (defensivo): o `forward` tem `**kwargs` mas NÃO usa
+        # `num_items_in_batch`, o que faz o Trainer inferir
+        # `model_accepts_loss_kwargs=True`. Hoje isso é inócuo porque a divisão por
+        # `gradient_accumulation_steps` só é pulada quando ALÉM disso existe uma chave
+        # literal "labels" no batch — e aqui as chaves são labels_a/b/c. Travar em False
+        # torna a escala do gradiente independente desse acidente de nomenclatura: se
+        # alguém renomear um campo para "labels" (por exemplo ao unificar com o dataset
+        # do modelo de memes), o LR efetivo saltaria 16× sem nenhum aviso.
+        self.model_accepts_loss_kwargs = False
+
+        self._loss_a_accum = 0.0
+        self._loss_b_accum = 0.0
+        self._loss_c_accum = 0.0
+        self._loss_n = 0
+
+    def compute_loss(self, model, inputs, return_outputs=False,
+                     num_items_in_batch=None):
+        outputs = model(**inputs)
+        loss = outputs[0]
+
+        inner = model.module if hasattr(model, "module") else model
+        comps = getattr(inner, "_last_loss_components", None)
+        if comps is not None:
+            self._loss_a_accum += float(comps["loss_a"])
+            self._loss_b_accum += float(comps["loss_b"])
+            self._loss_c_accum += float(comps["loss_c"])
+            self._loss_n += 1
+
+        return (loss, outputs) if return_outputs else loss
+
+    def log(self, logs, *args, **kwargs):
+        if self._loss_n > 0 and "loss" in logs:
+            logs["loss_a"] = self._loss_a_accum / self._loss_n
+            logs["loss_b"] = self._loss_b_accum / self._loss_n
+            logs["loss_c"] = self._loss_c_accum / self._loss_n
+            self._loss_a_accum = 0.0
+            self._loss_b_accum = 0.0
+            self._loss_c_accum = 0.0
+            self._loss_n = 0
+        super().log(logs, *args, **kwargs)
+
+
+def get_optimizer(model):
+    """AdamW com grupos por papel.
+
+    ARCH-17.4: biases e pesos de LayerNorm ficam FORA do weight decay — antes o grupo
+    `base_params` levava `weight_decay=0.05` indiscriminadamente. O grupo `cross_params`
+    (e o `cross_ids` que era calculado e nunca usado) desapareceu com a cross-attention.
+    """
+    def _no_decay(name: str) -> bool:
+        return name.endswith(".bias") or "LayerNorm.weight" in name or ".norm." in name
+
+    lora, viewer, base_decay, base_no_decay = [], [], [], []
+    for name, param in model.named_parameters():
+        if not param.requires_grad:
+            continue
+        if "lora" in name:
+            lora.append(param)
+        elif "viewer_emb" in name:
+            viewer.append(param)
+        elif _no_decay(name):
+            base_no_decay.append(param)
+        else:
+            base_decay.append(param)
+
+    return torch.optim.AdamW([
+        {"params": lora,          "lr": 1e-4, "weight_decay": 0.01},
+        {"params": viewer,        "lr": 1e-3, "weight_decay": 0.0},
+        {"params": base_decay,    "lr": 1e-3, "weight_decay": 0.05},
+        {"params": base_no_decay, "lr": 1e-3, "weight_decay": 0.0},
+    ])
+
+
+# ============================================================================
+# 15. Checkpoint enxuto (OPT-03) — com a ressalva do ARCH-01
+# ============================================================================
+
+def trainable_state_dict(model) -> dict:
+    """Só os parâmetros treináveis (inclui os adaptadores LoRA) — ~44 MB em vez dos
+    ~2,6 GB do `state_dict` completo (657 M params, dos quais 646 M são backbones
+    reconstrutíveis via `from_pretrained`)."""
+    trainable_names = {n for n, p in model.named_parameters() if p.requires_grad}
+    return {k: v.detach().cpu().clone()
+            for k, v in model.state_dict().items() if k in trainable_names}
+
+
+def save_run(model, run_path, scaler=None, tokenizer=None, meta: dict = None):
+    """Grava a run inteira num único diretório (ARCH-12): pesos treináveis, scaler,
+    tokenizer e metadados. Devolve o caminho."""
+    import safetensors.torch as st
+
+    run_path = Path(run_path)
+    run_path.mkdir(parents=True, exist_ok=True)
+
+    st.save_file(trainable_state_dict(model), str(run_path / "trainable.safetensors"))
+    if scaler is not None:
+        with open(run_path / "scaler.pkl", "wb") as f:
+            pickle.dump(scaler, f)
+    if tokenizer is not None:
+        tokenizer.save_pretrained(str(run_path))
+
+    full_meta = {
+        "use_bio": bool(model.use_bio),
+        "use_viewer_emb": bool(model.use_viewer_emb),
+        "fusion_in": int(model.fusion_in),
+        "max_length": MAX_LENGTH,
+        "test_case": TEST_CASE,
+        "split_seed": SPLIT_SEED,
+        # Registro explícito de que os biases do VideoMAE são FROZEN e portanto NÃO
+        # estão neste arquivo — quem carregar TEM de reaplicar `restore_videomae_qv_biases`
+        # (é o que `load_run` faz via `build_backbones`).
+        "videomae_qv_biases": "restored_at_build_not_in_checkpoint",
+    }
+    full_meta.update(meta or {})
+    with open(run_path / "meta.json", "w") as f:
+        json.dump(full_meta, f, indent=2)
+
+    print(f"[save_run] gravado em {run_path} "
+          f"(condição: use_bio={full_meta['use_bio']}, "
+          f"use_viewer_emb={full_meta['use_viewer_emb']}, fusion_in={full_meta['fusion_in']})")
+    return run_path
+
+
+def load_run(run_path, init_seed: int = INIT_SEED):
+    """Reconstrói o modelo a partir de um diretório de run e devolve (model, scaler).
+
+    ⚠ ARCH-01 × OPT-03: os `q_bias`/`v_bias` restaurados são FROZEN e não estão no
+    checkpoint enxuto. Este caminho passa por `build_backbones(restore_biases=True)`,
+    que os reaplica — se alguém construir o modelo por outra via e carregar este
+    arquivo, o modelo servido diverge do treinado SEM NENHUM AVISO.
+
+    A condição de ablação vem do `meta.json`, não de um default: carregar um checkpoint
+    B1 numa arquitetura B2 quebra alto (chaves `viewer_*` ausentes), que é a proteção
+    gratuita que o ARCH-20 traz (DIV-02).
+    """
+    import safetensors.torch as st
+
+    run_path = Path(run_path)
+    with open(run_path / "meta.json") as f:
+        meta = json.load(f)
+
+    model = build_model(init_seed,
+                        use_bio=meta["use_bio"],
+                        use_viewer_emb=meta["use_viewer_emb"],
+                        restore_biases=True)
+
+    sd = st.load_file(str(run_path / "trainable.safetensors"), device="cpu")
+    missing, unexpected = model.load_state_dict(sd, strict=False)
+    if unexpected:
+        raise RuntimeError(
+            f"load_run: chaves inesperadas no checkpoint ({unexpected[:5]}...). "
+            "Provavelmente o checkpoint é de outra condição/arquitetura.")
+    trainable_names = {n for n, p in model.named_parameters() if p.requires_grad}
+    not_loaded = trainable_names - set(sd.keys())
+    if not_loaded:
+        raise RuntimeError(
+            f"load_run: {len(not_loaded)} parâmetros TREINÁVEIS não estavam no "
+            f"checkpoint (ex.: {sorted(not_loaded)[:5]}). Checkpoint incompleto.")
+    # `missing` contém os pesos congelados dos backbones — esperado, vêm do from_pretrained.
+
+    scaler = None
+    scaler_path = run_path / "scaler.pkl"
+    if scaler_path.exists():
+        with open(scaler_path, "rb") as f:
+            scaler = pickle.load(f)
+    else:
+        print("[load_run] AVISO: scaler.pkl ausente. NUNCA ajustar um RobustScaler novo "
+              "no conjunto avaliado — isso é vazamento (BUG-B/ARCH-18).")
+
+    print(f"[load_run] {run_path} carregado | condição: use_bio={meta['use_bio']}, "
+          f"use_viewer_emb={meta['use_viewer_emb']} | "
+          f"{len(missing)} pesos congelados vindos dos backbones")
+    return model, scaler
+
+
+# ============================================================================
+# 16. Self-checks (baratos, determinísticos, sem GPU)
+# ============================================================================
+
+def selfcheck_task_a_convention():
+    """Falha se a convenção da Task A estiver invertida em QUALQUER das duas pontas.
+
+    Um merge com `memes_core.py` inverteria uma delas silenciosamente — sem erro, sem
+    shape errado, só métricas ruins. Chamar na célula de sanity checks do notebook e no
+    início de qualquer script de inferência.
+    """
+    # Ponta 1 — a loss: logit muito positivo tem de casar com "todos votaram YES".
+    assert loss_task_a(torch.tensor([10.0]), torch.tensor([1.0])).item() < 1e-3
+    assert loss_task_a(torch.tensor([-10.0]), torch.tensor([1.0])).item() > 5.0
+    # Ponta 2 — o formatter: probs [P(NO), P(YES)] = [0, 1] tem de virar "YES".
+    probs = np.array([[0.0, 1.0]])
+    assert _format_for_pyevall(probs, ["x"], '2_1', 'hard')[0]["value"] == "YES"
+    soft = _format_for_pyevall(probs, ["x"], '2_1', 'soft')[0]["value"]
+    assert soft["YES"] == 1.0 and soft["NO"] == 0.0
+    print("✓ convenção Task A (sigmoid = P(YES), eixo [NO, YES]) verificada")
+
+
+def selfcheck_fusion_widths():
+    """A largura da fusão TEM de ser função da condição (OPT-13/ARCH-20)."""
+    assert fusion_input_dim(True) == 2688, fusion_input_dim(True)
+    assert fusion_input_dim(False) == 2560, fusion_input_dim(False)
+    print("✓ fusion_input_dim: 2688 com bio (B1/B2), 2560 sem bio (B0)")
+
+
+def selfcheck_modality_dropout(p: float = MODALITY_DROPOUT_P, n: int = 400000,
+                               seed: int = 0, tol: float = 0.003):
+    """Verifica a invariante do §1.2: a taxa POR MODALIDADE é `p` e é idêntica em todos
+    os braços (um braço sem bio simplesmente nunca usa a 4ª faixa)."""
+    g = torch.Generator().manual_seed(seed)
+    r = torch.rand(n, generator=g)
+    band = torch.clamp((r / p).floor(), max=4.0)
+    rates = [float((band == b).float().mean()) for b in range(4)]
+    for name, rate in zip(("vídeo", "áudio", "texto", "bio"), rates):
+        assert abs(rate - p) < tol, f"faixa {name}: {rate:.4f} vs p={p}"
+    print(f"✓ modality dropout: taxas por modalidade ≈ {['%.4f' % x for x in rates]} "
+          f"(p={p}); B0 apenas não usa a 4ª faixa, as outras três não mudam")
+
+
+def run_selfchecks():
+    selfcheck_task_a_convention()
+    selfcheck_fusion_widths()
+    selfcheck_modality_dropout()
+
+
+if __name__ == "__main__":
+    print("video_core.py: módulo de definições, sem execução de treino.")
+    print(f"SPLIT_SEED={SPLIT_SEED} INIT_SEED={INIT_SEED} "
+          f"VAL_FRACTION={VAL_FRACTION} MAX_LENGTH={MAX_LENGTH}")
+    print(f"TASK_A_PROB_ORDER={TASK_A_PROB_ORDER} TEST_CASE={TEST_CASE}")
+    run_selfchecks()

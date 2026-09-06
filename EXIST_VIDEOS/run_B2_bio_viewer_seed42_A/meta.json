@@ -1,0 +1,17 @@
+{
+  "use_bio": true,
+  "use_viewer_emb": true,
+  "fusion_in": 2688,
+  "max_length": 256,
+  "test_case": "EXIST2026",
+  "split_seed": 42,
+  "videomae_qv_biases": "restored_at_build_not_in_checkpoint",
+  "init_seed": 42,
+  "condition": "B2_bio_viewer",
+  "num_train_epochs": 5,
+  "train_runtime_s": 1873.468,
+  "arm": "A",
+  "restore_biases": true,
+  "audio_version": "v1",
+  "frames_version": "v2"
+}

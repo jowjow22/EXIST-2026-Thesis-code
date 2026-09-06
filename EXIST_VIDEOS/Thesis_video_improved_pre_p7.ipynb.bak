@@ -1,0 +1,712 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# EXIST 2026 — Task 3 (vídeos) — notebook de orquestração\n",
+    "\n",
+    "Este notebook **não define lógica**. Tudo — constantes, dataset, modelo, perdas,\n",
+    "métricas, IO de checkpoint — vive em `video_core.py`, mesmo padrão já aceito no projeto\n",
+    "com `EXIST_MEMES/memes_core.py`. Aqui só há orquestração: carregar dados, aplicar o\n",
+    "split congelado, ajustar o scaler, instanciar, treinar, avaliar, salvar.\n",
+    "\n",
+    "Substitui `Thesis_video_fixed.ipynb`, que fica **intocado** como registo do sistema\n",
+    "submetido. As correções aplicadas estão especificadas em\n",
+    "`improvements/04_RECONCILIATION.md` e rastreadas em\n",
+    "`improvements/05_IMPLEMENTATION_NOTES.md`.\n",
+    "\n",
+    "## O que mudou, em uma linha cada\n",
+    "\n",
+    "| # | Mudança |\n",
+    "|---|---|\n",
+    "| ARCH-01 | `q_bias`/`v_bias` do VideoMAE restaurados do checkpoint (o `transformers` v5 não os mapeia; rodavam zerados nas 12 camadas) |\n",
+    "| ARCH-03 (b) | cross-attention **removida** — atendia sobre uma única key (softmax ≡ 1,0), era um mapa linear e consumia ≈ 45 % dos params treináveis |\n",
+    "| ARCH-05 | `max_length` 128 → **256** (128 truncava 42,9 % das transcrições) |\n",
+    "| ARCH-06 / ARCH-16 | **SWA removido**; nº de épocas é PROVISÓRIO até a run de calibração |\n",
+    "| ARCH-07 | modality dropout **por amostra**, faixas fixas e posicionais, taxa por modalidade idêntica em todos os braços |\n",
+    "| ARCH-08 | `bio_ln` removido (desfazia o `RobustScaler`); sem `BatchNorm1d` |\n",
+    "| ARCH-10 | formato hard da Task C não emite mais `NO` junto com categorias |\n",
+    "| ARCH-11 (b) | limiares da Task C ajustados numa metade do val e reportados na outra |\n",
+    "| ARCH-12 / OPT-03 | um `RUN_DIR` por (condição × seed); checkpoint enxuto (~44 MB, não 2,6 GB) |\n",
+    "| ARCH-14 | métricas que falham voltam `nan` em vez de sumirem da tabela; + proxies sklearn |\n",
+    "| ARCH-20 / OPT-13 | flags de ablação no **construtor**: cada condição é um modelo treinado do zero, e B0 não carrega slot bio (fusão 2560, não 2688) |\n",
+    "| OPT-06 / OPT-11 | `SPLIT_SEED` fixo separado de `INIT_SEED`; split 80/20 **congelado em disco** |\n",
+    "| DIV-06 / DIV-07 | semântica de `reaction_time` unificada; `LABELS_2_1` (que mentia a ordem) removida |\n",
+    "\n",
+    "## O que este notebook **invalida**\n",
+    "\n",
+    "Todos os checkpoints, CSVs de ablação, JSONs de limiares e predições existentes.\n",
+    "Ver a seção \"O que este código invalida\" em `improvements/05_IMPLEMENTATION_NOTES.md`."
+   ],
+   "id": "cell-00"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 1. Imports\n",
+    "\n",
+    "Nada de lógica aqui — só o módulo e o mínimo para orquestrar."
+   ],
+   "id": "cell-01"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import json\n",
+    "\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import torch\n",
+    "from sklearn.preprocessing import RobustScaler\n",
+    "from transformers import TrainingArguments, XLMRobertaTokenizer\n",
+    "\n",
+    "import video_core as vc"
+   ],
+   "id": "cell-02"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 2. Configuração da run\n",
+    "\n",
+    "**Uma run = uma condição × uma `INIT_SEED`.** A tabela de ablação são 9 runs\n",
+    "(3 condições × 3 seeds), cada uma com o seu próprio checkpoint — os braços **não**\n",
+    "partilham pesos (era o ARCH-20).\n",
+    "\n",
+    "- `SPLIT_SEED` é **fixo** e vive em `video_core`. Nunca muda, nunca é re-sorteado.\n",
+    "  Re-sortear porque os números saíram feios é *split-shopping*.\n",
+    "- `INIT_SEED` varia em {42, 7, 2025}: init dos pesos novos + ordem dos dados.\n",
+    "  Com o split fixo, o delta entre condições **dentro de uma seed** é pareado — que é a\n",
+    "  única análise válida (delta por seed + consistência de sinal, nunca `|Δmédia| > std`)."
+   ],
+   "id": "cell-03"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "INIT_SEED      = 42        # ∈ {42, 7, 2025}\n",
+    "USE_BIO        = True      # False → B0_content_only\n",
+    "USE_VIEWER_EMB = True      # False → B1_bio_no_viewer ; True → B2_bio_viewer\n",
+    "\n",
+    "# Orçamento de épocas — PROVISÓRIO até a run de calibração (ver célula final).\n",
+    "# Para a run de CALIBRAÇÃO, trocar para vc.CALIBRATION_EPOCHS (15) e ler a curva.\n",
+    "NUM_EPOCHS = vc.NUM_TRAIN_EPOCHS_PROVISIONAL     # 6\n",
+    "\n",
+    "CONDITION = vc.condition_tag(USE_BIO, USE_VIEWER_EMB)\n",
+    "RUN_DIR   = vc.run_dir(INIT_SEED, USE_BIO, USE_VIEWER_EMB)\n",
+    "CKPT_DIR  = vc.ckpt_dir(INIT_SEED, USE_BIO, USE_VIEWER_EMB)\n",
+    "\n",
+    "print(f\"condição = {CONDITION} | INIT_SEED = {INIT_SEED} | SPLIT_SEED = {vc.SPLIT_SEED}\")\n",
+    "print(f\"RUN_DIR  = {RUN_DIR}\")\n",
+    "print(f\"CKPT_DIR = {CKPT_DIR}\")\n",
+    "print(f\"épocas   = {NUM_EPOCHS} (provisório) | max_length = {vc.MAX_LENGTH}\")"
+   ],
+   "id": "cell-04"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 3. Determinismo e self-checks\n",
+    "\n",
+    "`set_all_seeds` é chamado **de novo imediatamente antes de cada init de pesos** (é o que\n",
+    "`vc.build_model` faz internamente) — as matrizes LoRA A são aleatórias, e o\n",
+    "`set_seed(42)` interno do Trainer chega tarde demais.\n",
+    "\n",
+    "Os self-checks custam milissegundos e travam três coisas que falham em silêncio:\n",
+    "a convenção da Task A (invertida em relação ao `memes_core.py`), a largura da fusão por\n",
+    "condição, e a taxa do modality dropout por modalidade."
+   ],
+   "id": "cell-05"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "vc.set_all_seeds(INIT_SEED)\n",
+    "vc.run_selfchecks()"
+   ],
+   "id": "cell-06"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 4. Dados e split **congelado**\n",
+    "\n",
+    "O split é um artefato em disco (`Dataset/val_split_42.json`), commitado no repositório.\n",
+    "Todas as runs carregam a mesma lista de `id_EXIST` em vez de recalcular — assim\n",
+    "\"as 9 runs partilham o mesmo val\" é **verificável**, não uma promessa.\n",
+    "\n",
+    "Na primeira criação, o split passa pelo portão do §6.3: se alguma categoria da Task C\n",
+    "ficar com contagem de positivos de um dígito no val, ele re-estratifica pela chave\n",
+    "conjunta e, se ainda assim falhar, **recusa-se a gravar**. Já foi criado e passou na\n",
+    "primeira tentativa (estratificação por Task A, 2019/505, categoria mais rara com 31\n",
+    "positivos).",
+    "\n⚠ **O treino roda numa VM separada e `Dataset/` não é sincronizado.** Copiar `Dataset/val_split_42.json` para a VM antes da primeira run: a célula abaixo tem de imprimir `[split] carregado de ...`. Se imprimir `[split] artefato gravado`, a run está **fora de protocolo** — o split foi recalculado em vez de carregado.\n"
+   ],
+   "id": "cell-07"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# O artefato do split é COMMITADO no repositório, mas `Dataset/` não é sincronizado\n",
+    "# com a VM automaticamente. Sem este assert, `build_frozen_split` cairia no ramo de\n",
+    "# CRIAÇÃO e recalcularia o split em silêncio — as runs continuariam a partilhar um val,\n",
+    "# mas deixaria de ser O val congelado, e a garantia do §6.2 vira promessa outra vez.\n",
+    "assert vc.split_artifact_path().exists(), (\n",
+    "    \"Copiar Dataset/val_split_42.json para a VM antes de rodar. Sem ele, \"\n",
+    "    \"build_frozen_split RECALCULA o split em vez de carregar o congelado.\")\n",
+    "\n",
+    "full_df = pd.read_json(\"./Dataset/training/EXIST2026_training.json\").transpose()\n",
+    "train_df, val_df = vc.build_frozen_split(full_df)\n",
+    "print(f\"Treino: {len(train_df)} | Val: {len(val_df)}\")"
+   ],
+   "id": "cell-08"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 5. `RobustScaler` das features biométricas\n",
+    "\n",
+    "Ajustado **só no treino** (anti-leakage) e gravado no `RUN_DIR`, junto com os pesos —\n",
+    "o `inference_video.py` tem de recebê-lo por `--scaler` (obrigatório: ajustar um scaler\n",
+    "novo no conjunto avaliado é vazamento, BUG-B/ARCH-18).\n",
+    "\n",
+    "A contagem de imputações de `reaction_time` é impressa de propósito: **rodar esta mesma\n",
+    "contagem sobre o JSON de test antes de submeter** (DIV-06)."
+   ],
+   "id": "cell-09"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "train_bio_matrix = vc.collect_bio_vectors(train_df)\n",
+    "scaler = RobustScaler().fit(train_bio_matrix)\n",
+    "print(\"matriz bio de treino:\", train_bio_matrix.shape)"
+   ],
+   "id": "cell-10"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 6. Datasets\n",
+    "\n",
+    "`max_length=256` (ARCH-05). Tem de ser **o mesmo** em qualquer caminho de inferência."
+   ],
+   "id": "cell-11"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tokenizer = XLMRobertaTokenizer.from_pretrained(vc.XLMR_NAME)\n",
+    "\n",
+    "train_dataset = vc.EXISTVideoDataset(\n",
+    "    train_df, tokenizer, scaler,\n",
+    "    vc.frames_dir(\"train\"), vc.audio_dir(\"train\"), max_length=vc.MAX_LENGTH)\n",
+    "val_dataset = vc.EXISTVideoDataset(\n",
+    "    val_df, tokenizer, scaler,\n",
+    "    vc.frames_dir(\"train\"), vc.audio_dir(\"train\"), max_length=vc.MAX_LENGTH)\n",
+    "\n",
+    "print(f\"Train: {len(train_dataset)} | Val: {len(val_dataset)}\")"
+   ],
+   "id": "cell-12"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 7. Sanity checks dos dados"
+   ],
+   "id": "cell-13"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sample = train_dataset[0]\n",
+    "for k, v in sample.items():\n",
+    "    print(f\"{k:20s}: {tuple(v.shape) if torch.is_tensor(v) else v}\")\n",
+    "\n",
+    "assert sample[\"frames\"].shape == (vc.NUM_FRAMES, vc.NUM_CHANNELS, vc.FRAME_H, vc.FRAME_W)\n",
+    "print(\"✓ shape dos frames confere\")\n",
+    "\n",
+    "# O batch NÃO tem nenhuma chave chamada \"labels\" — é o que mantém a divisão por\n",
+    "# gradient_accumulation_steps ativa (ARCH-02). MultiTaskTrainer trava a flag em False\n",
+    "# de qualquer forma, mas confirmar aqui é grátis.\n",
+    "print(\"'labels' no batch?\", \"labels\" in sample, \"(tem de ser False)\")\n",
+    "\n",
+    "cvpc_values = [train_dataset[i][\"cvpc\"].item() for i in range(len(train_dataset))]\n",
+    "print(f\"CVPC mean={np.mean(cvpc_values):.4f} std={np.std(cvpc_values):.4f} \"\n",
+    "      f\"range=[{min(cvpc_values):.4f}, {max(cvpc_values):.4f}]\")"
+   ],
+   "id": "cell-14"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 8. Modelo\n",
+    "\n",
+    "`vc.build_model` faz, na ordem do protocolo de determinismo:\n",
+    "re-seed → VideoMAE `from_pretrained` → **restaura `q_bias`/`v_bias`** (ARCH-01) →\n",
+    "LoRA → re-seed → XLM-R → LoRA → re-seed → `EXISTVideoModel` na condição pedida.\n",
+    "\n",
+    "⚠ Fingerprints só são comparáveis **dentro do mesmo par (condição, INIT_SEED)**: braços\n",
+    "diferentes criam módulos diferentes e consomem RNG de forma diferente.\n",
+    "\n",
+    "⚠ Confirmar a contagem de params por braço **antes** de qualquer número ir para a nota\n",
+    "de rodapé da tese — a tabela do §1.4 da reconciliação (B0 ≈ 5,88 M, B1/B2 ≈ 6,03 M) é\n",
+    "aritmética feita à mão."
+   ],
+   "id": "cell-15"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "model = vc.build_model(INIT_SEED, use_bio=USE_BIO, use_viewer_emb=USE_VIEWER_EMB)\n",
+    "\n",
+    "print(\"fusion_in:\", model.fusion_in,\n",
+    "      \"(2560 = B0 sem slot bio | 2688 = B1/B2)\")\n",
+    "print(\"params:\", vc.count_params(model))\n",
+    "vc.record_fingerprint(RUN_DIR, \"init\", model)"
+   ],
+   "id": "cell-16"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 9. `TrainingArguments`\n",
+    "\n",
+    "**Esta célula tem quatro donos e é a de maior risco de alteração acidental no meio de\n",
+    "uma série.** Depois de congelada para a run de calibração, ela **não muda** até o fim da\n",
+    "tabela de ablação — qualquer alteração obriga a repetir a calibração.\n",
+    "\n",
+    "Decisões registadas:\n",
+    "\n",
+    "- `warmup_steps=0.1` (float `[0,1)` = ratio). Isto é **durabilidade, não bugfix**:\n",
+    "  `warmup_ratio` **funciona** na versão da VM (`transformers==5.6.0`) — o treino\n",
+    "  original rodou com ele, emitindo só um aviso de deprecação. Migrar prepara para uma\n",
+    "  versão futura. Confirmar equivalência imprimindo `get_warmup_steps(total_steps)`.\n",
+    "- `load_best_model_at_end=False` e `metric_for_best_model` **deliberadamente não\n",
+    "  definido**: selecionar a época pela mesma métrica reportada, sobre o mesmo split, é o\n",
+    "  vazamento nº 2 do precedente dos memes. Com a flag em False `metric_for_best_model`\n",
+    "  seria inerte, mas defini-lo arma o vazamento para quem virar a flag depois.\n",
+    "- **batch/checkpointing:** mantidos na configuração que **sabidamente roda**\n",
+    "  (micro-batch 2 × accum 16 = efetivo 32, com gradient checkpointing). O OPT-04 propõe\n",
+    "  bs=8 / accum=4 / sem checkpointing — mesmo batch efetivo, possivelmente 1,5–2× mais\n",
+    "  rápido — mas é `[MUDA]` (muda o consumo de RNG e os pesos bit a bit), depende de VRAM\n",
+    "  não medida e do OPT-01 (frames em fp16/uint8, que exige re-extração). **Decidir com o\n",
+    "  benchmark abaixo e congelar ANTES da run de calibração.**\n",
+    "- `save_strategy=\"no\"`: o Trainer serializava 2,6 GB por época e **nenhum** desses\n",
+    "  checkpoints era lido. O modelo final é salvo à mão, enxuto, na seção 12."
+   ],
+   "id": "cell-17"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "training_args = TrainingArguments(\n",
+    "    output_dir=str(CKPT_DIR),\n",
+    "    num_train_epochs=NUM_EPOCHS,\n",
+    "\n",
+    "    # ── batch: configuração CONGELADA (a que sabidamente roda) ──────────────\n",
+    "    per_device_train_batch_size=2,\n",
+    "    per_device_eval_batch_size=2,\n",
+    "    gradient_accumulation_steps=16,          # batch efetivo = 32\n",
+    "    gradient_checkpointing=True,\n",
+    "    # Candidato do OPT-04, a validar no benchmark da Fase 0 e congelar antes da\n",
+    "    # calibração (mesmo batch efetivo, sem checkpointing):\n",
+    "    #     per_device_train_batch_size=8,\n",
+    "    #     gradient_accumulation_steps=4,\n",
+    "    #     per_device_eval_batch_size=16,\n",
+    "    #     gradient_checkpointing=False,\n",
+    "\n",
+    "    bf16=True,\n",
+    "    fp16=False,\n",
+    "\n",
+    "    dataloader_num_workers=2,                # OPT-05 sugere 8 — depende de `nproc` na VM\n",
+    "    dataloader_persistent_workers=True,      # evita recriar o pool a cada época/avaliação\n",
+    "    dataloader_pin_memory=True,\n",
+    "\n",
+    "    eval_strategy=\"epoch\",\n",
+    "    save_strategy=\"no\",                      # OPT-03: nenhum checkpoint intermédio era lido\n",
+    "    load_best_model_at_end=vc.LOAD_BEST_MODEL_AT_END,   # False — não ligar (leakage)\n",
+    "    # metric_for_best_model: deliberadamente AUSENTE. Ver markdown acima.\n",
+    "\n",
+    "    warmup_steps=0.1,                        # float ∈ [0,1) = ratio (durabilidade, não bugfix)\n",
+    "    lr_scheduler_type=\"cosine\",\n",
+    "\n",
+    "    remove_unused_columns=False,             # o dataset devolve campos que o forward\n",
+    "                                             # consome por nome (e `id_EXIST`, engolido\n",
+    "                                             # pelo **kwargs)\n",
+    "    label_names=[\"labels_a\", \"labels_b\", \"labels_c\"],\n",
+    "\n",
+    "    report_to=\"none\",\n",
+    "    logging_steps=10,\n",
+    "    seed=INIT_SEED,\n",
+    "    data_seed=INIT_SEED,\n",
+    ")"
+   ],
+   "id": "cell-18"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 9.1 Benchmark do batch (rodar UMA vez, na VM, antes de congelar)\n",
+    "\n",
+    "Não é para rodar em toda run. É a medição que decide a configuração de batch; depois\n",
+    "dela, a escolha entra na célula acima e **fica congelada**."
+   ],
+   "id": "cell-19"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Descomentar para medir. ~15 min. Comparar train_samples_per_second e a memória de pico.\n",
+    "#\n",
+    "# for bs, accum, ckpt in [(2, 16, True), (2, 16, False), (8, 4, True), (8, 4, False)]:\n",
+    "#     torch.cuda.reset_peak_memory_stats()\n",
+    "#     bench_args = TrainingArguments(\n",
+    "#         output_dir=\"./bench_tmp\", max_steps=30, per_device_train_batch_size=bs,\n",
+    "#         gradient_accumulation_steps=accum, gradient_checkpointing=ckpt,\n",
+    "#         bf16=True, save_strategy=\"no\", eval_strategy=\"no\",\n",
+    "#         remove_unused_columns=False, report_to=\"none\",\n",
+    "#         seed=INIT_SEED, data_seed=INIT_SEED,\n",
+    "#     )\n",
+    "#     bench_model = vc.build_model(INIT_SEED, use_bio=USE_BIO, use_viewer_emb=USE_VIEWER_EMB)\n",
+    "#     bench = vc.MultiTaskTrainer(model=bench_model, args=bench_args,\n",
+    "#                                 train_dataset=train_dataset,\n",
+    "#                                 data_collator=vc.video_collate)\n",
+    "#     out = bench.train()\n",
+    "#     print(f\"bs={bs} accum={accum} ckpt={ckpt}: \"\n",
+    "#           f\"{out.metrics['train_samples_per_second']:.2f} amostras/s | \"\n",
+    "#           f\"pico {torch.cuda.max_memory_allocated() / 2**30:.2f} GiB\")\n",
+    "#     del bench, bench_model; torch.cuda.empty_cache()"
+   ],
+   "id": "cell-20"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 10. Trainer\n",
+    "\n",
+    "`data_collator=vc.video_collate` é **obrigatório**: o dataset devolve `id_EXIST` (str) e\n",
+    "o `default_data_collator` do HF tentaria `torch.tensor` sobre uma lista de strings.\n",
+    "\n",
+    "`trainer.label_names` é setado também depois da construção — é a forma empiricamente\n",
+    "conhecida por funcionar em `transformers==5.6.0`, e é o que faz `eval_pred.label_ids`\n",
+    "chegar a `compute_metrics` como uma 3-tupla. **Não remover.**\n",
+    "\n",
+    "Sem `SWACallback` (ARCH-16) e sem `EarlyStoppingCallback`."
+   ],
+   "id": "cell-21"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "optimizer = vc.get_optimizer(model)\n",
+    "\n",
+    "trainer = vc.MultiTaskTrainer(\n",
+    "    model=model,\n",
+    "    args=training_args,\n",
+    "    train_dataset=train_dataset,\n",
+    "    eval_dataset=val_dataset,\n",
+    "    compute_metrics=vc.compute_metrics,\n",
+    "    data_collator=vc.video_collate,\n",
+    "    optimizers=(optimizer, None),\n",
+    ")\n",
+    "trainer.label_names = [\"labels_a\", \"labels_b\", \"labels_c\"]\n",
+    "\n",
+    "# Verificação do ARCH-02 e da equivalência warmup_ratio → warmup_steps.\n",
+    "print(\"model_accepts_loss_kwargs:\", trainer.model_accepts_loss_kwargs, \"(travado em False)\")\n",
+    "total_steps = (len(train_dataset) // (training_args.per_device_train_batch_size\n",
+    "               * training_args.gradient_accumulation_steps)) * NUM_EPOCHS\n",
+    "print(\"warmup steps:\", training_args.get_warmup_steps(total_steps),\n",
+    "      f\"de ~{total_steps} steps totais\")"
+   ],
+   "id": "cell-22"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 11. Treino"
+   ],
+   "id": "cell-23"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "train_output = trainer.train()\n",
+    "print(train_output)"
+   ],
+   "id": "cell-24"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 12. Curva de validação — leitura do orçamento de épocas\n",
+    "\n",
+    "**Só relevante na run de calibração** (`NUM_EPOCHS = vc.CALIBRATION_EPOCHS`).\n",
+    "\n",
+    "Critério fixado *a priori*, não negociável depois de ver a curva:\n",
+    "\n",
+    "> **E = argmin(`eval_loss`)** sobre as 15 épocas, com `INIT_SEED=42` e o split\n",
+    "> congelado. Congelar E e usá-lo, sem alteração, em todas as condições e seeds.\n",
+    "\n",
+    "Por que `eval_loss` e não a ICM: escolher a época pela **mesma métrica que se reporta** é\n",
+    "o vazamento nº 2 do precedente dos memes. `eval_loss` é um escalar único, independente\n",
+    "do PyEvALL, e não é o número que vai para a tabela — é o critério menos contaminado\n",
+    "disponível sem um terceiro split, e é conservador.\n",
+    "\n",
+    "Declarar na tese, textualmente: *orçamento de épocas escolhido uma vez, no conjunto de\n",
+    "desenvolvimento, numa única seed, pelo mínimo da loss de validação, e congelado para\n",
+    "todas as condições e seeds.* Registar também as 6 métricas em E e em E±2, para\n",
+    "documentar a sensibilidade — **sem usar isso para mudar E**."
+   ],
+   "id": "cell-25"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "evals = [h for h in trainer.state.log_history if \"eval_loss\" in h]\n",
+    "if evals:\n",
+    "    curva = pd.DataFrame(evals)\n",
+    "    cols = [c for c in curva.columns\n",
+    "            if c in (\"epoch\", \"eval_loss\")\n",
+    "            or c.startswith((\"eval_task_a\", \"eval_task_b\", \"eval_task_c\"))]\n",
+    "    print(curva[cols].to_string(index=False))\n",
+    "\n",
+    "    best = min(evals, key=lambda h: h[\"eval_loss\"])\n",
+    "    print(f\"\\nE = argmin(eval_loss) = época {best['epoch']:.0f} \"\n",
+    "          f\"(eval_loss = {best['eval_loss']:.4f})\")\n",
+    "    print(\"→ congelar este E em vc.NUM_TRAIN_EPOCHS_PROVISIONAL e NÃO mexer mais.\")"
+   ],
+   "id": "cell-26"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 13. Salvar a run (checkpoint enxuto)\n",
+    "\n",
+    "Um diretório por (condição × seed), com pesos treináveis + LoRA (~44 MB), scaler,\n",
+    "tokenizer, fingerprints e `meta.json`.\n",
+    "\n",
+    "⚠ **ARCH-01 × OPT-03:** os `q_bias`/`v_bias` restaurados são *frozen* e **não** entram\n",
+    "neste arquivo. Quem carregar tem de reaplicar a restauração — é o que `vc.load_run` faz,\n",
+    "via `build_backbones`. Construir o modelo por outra via e carregar este arquivo produz\n",
+    "um modelo servido diferente do treinado, **sem aviso**."
+   ],
+   "id": "cell-27"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from accelerate.utils import extract_model_from_parallel\n",
+    "\n",
+    "actual_model = extract_model_from_parallel(trainer.model)\n",
+    "vc.save_run(actual_model, RUN_DIR, scaler=scaler, tokenizer=tokenizer,\n",
+    "            meta={\"init_seed\": INIT_SEED, \"condition\": CONDITION,\n",
+    "                  \"num_train_epochs\": NUM_EPOCHS,\n",
+    "                  \"train_runtime_s\": train_output.metrics.get(\"train_runtime\")})\n",
+    "vc.record_fingerprint(RUN_DIR, \"final\", actual_model)"
+   ],
+   "id": "cell-28"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 14. Validação do checkpoint\n",
+    "\n",
+    "No sistema antigo esta célula **crashou** (gravava num diretório e lia de outro), então\n",
+    "nenhuma verificação de integridade jamais rodou. Agora lê exatamente o que a gravação\n",
+    "escreveu, e falha alto se as chaves não baterem."
+   ],
+   "id": "cell-29"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "model_check, scaler_check = vc.load_run(RUN_DIR, init_seed=INIT_SEED)\n",
+    "\n",
+    "mismatches = 0\n",
+    "for key in [\"fusion.0.weight\", \"head_a.weight\", \"head_b.weight\", \"head_c.weight\"]:\n",
+    "    orig = actual_model.state_dict()[key].cpu()\n",
+    "    loaded = model_check.state_dict()[key].cpu()\n",
+    "    if torch.allclose(orig, loaded):\n",
+    "        print(f\"  OK: {key}\")\n",
+    "    else:\n",
+    "        print(f\"  MISMATCH: {key}\")\n",
+    "        mismatches += 1\n",
+    "\n",
+    "fresh = vc.build_model(INIT_SEED, use_bio=USE_BIO, use_viewer_emb=USE_VIEWER_EMB)\n",
+    "differs_from_fresh = not torch.allclose(\n",
+    "    model_check.state_dict()[\"head_a.weight\"].cpu(),\n",
+    "    fresh.state_dict()[\"head_a.weight\"].cpu())\n",
+    "\n",
+    "if mismatches == 0 and differs_from_fresh:\n",
+    "    print(\"\\n✓ Checkpoint válido — bate com o modelo treinado e difere do init aleatório\")\n",
+    "elif mismatches:\n",
+    "    print(f\"\\n✗ {mismatches} divergências de peso — algo correu mal no salvamento\")\n",
+    "else:\n",
+    "    print(\"\\n✗ Os pesos carregados são idênticos ao init aleatório — não foi salvo\")\n",
+    "\n",
+    "del model_check, fresh"
+   ],
+   "id": "cell-30"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 15. Ajuste de limiares da Task C (uma vez, pós-treino)\n",
+    "\n",
+    "**Único** lugar onde a busca de limiares roda. Rodar por época ajustaria os limiares ao\n",
+    "ruído do dev set.\n",
+    "\n",
+    "Os limiares são ajustados numa metade do val e o número reportável vem da **outra**\n",
+    "metade (ARCH-11 b). `NONE` fica fixo em 0,5 — com a regra hard do ARCH-10 o seu limiar\n",
+    "só entra em jogo quando nenhuma categoria bate a sua, e deixá-lo livre era um grau de\n",
+    "liberdade que só produzia predições contraditórias.\n",
+    "\n",
+    "⚠ **Assimetria a declarar na tese:** o Task C hard reportado aqui vem de ~252 amostras,\n",
+    "enquanto Task A/B (da célula de avaliação) vêm das ~505 do val inteiro."
+   ],
+   "id": "cell-31"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "threshold_result = vc.tune_task_c_thresholds(\n",
+    "    trainer, val_dataset,\n",
+    "    save_path=str(RUN_DIR / \"task_c_thresholds.json\"),\n",
+    ")"
+   ],
+   "id": "cell-32"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 16. Avaliação final e próximos passos\n",
+    "\n",
+    "`trainer.evaluate()` é o **caminho único** de avaliação (OPT-08): com as flags de\n",
+    "ablação no construtor, cada condição é um modelo, e não há mais um loop de inferência\n",
+    "paralelo no harness produzindo números num regime numérico diferente (era o BUG-H:\n",
+    "0,3531 do `evaluate()` contra 0,34764 do harness, mesmo modelo, mesma seed).\n",
+    "\n",
+    "**Depois das 9 runs:**\n",
+    "\n",
+    "1. Agregar com **delta pareado por seed + consistência de sinal** — nunca\n",
+    "   `|Δmédia| > std`. Para cada métrica e cada par (condição X, baseline B):\n",
+    "   `δ_s = m(X, s) − m(B, s)` para `s ∈ {42, 7, 2025}`; reportar os três δ, a mediana e\n",
+    "   se o sinal é consistente.\n",
+    "2. `probe_zero_video` (04_RECONCILIATION §2.3) — **análise separada, nunca na tabela de\n",
+    "   ablação**, e com leitura assimétrica: se as métricas não caem, isso fecha a\n",
+    "   cross-attention e é um achado negativo publicável; se caem, **não é resultado\n",
+    "   nenhum**, é só um gatilho para gastar 3 runs num braço treinado.\n",
+    "3. Reconciliar `CLAUDE.md`, o diagrama TikZ e o paper: a linha correta passa a ser\n",
+    "   **\"2688→1024 (B1/B2); 2560→1024 (B0)\"**, e o diagrama não pode mais mostrar a\n",
+    "   cross-attention."
+   ],
+   "id": "cell-33"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "final_metrics = trainer.evaluate()\n",
+    "for k, v in sorted(final_metrics.items()):\n",
+    "    if isinstance(v, float):\n",
+    "        print(f\"  {k}: {v:.4f}\")\n",
+    "\n",
+    "with open(RUN_DIR / \"final_metrics.json\", \"w\") as f:\n",
+    "    json.dump({k: (float(v) if isinstance(v, (int, float)) else v)\n",
+    "               for k, v in final_metrics.items()}, f, indent=2)\n",
+    "print(f\"\\n✓ métricas gravadas em {RUN_DIR / 'final_metrics.json'}\")"
+   ],
+   "id": "cell-34"
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python",
+   "version": "3.11.0",
+   "mimetype": "text/x-python",
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "pygments_lexer": "ipython3",
+   "nbconvert_exporter": "python",
+   "file_extension": ".py"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

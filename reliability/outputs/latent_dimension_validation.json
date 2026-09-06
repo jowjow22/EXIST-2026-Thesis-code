@@ -1,0 +1,313 @@
+{
+  "seed": 42,
+  "n_total": 887,
+  "n": 844,
+  "features": [
+    "yes_rate",
+    "n_distinct_categories",
+    "category_entropy",
+    "mean_labels_per_item"
+  ],
+  "control": "n_sexist_items",
+  "prereg": {
+    "rho_bands": {
+      "desprezável": 0.2,
+      "fraca": 0.3,
+      "moderada": 0.5,
+      "forte": 1.01
+    },
+    "pc1_unique_dimension": 0.55,
+    "pc1_partial": 0.35,
+    "stratum_half_width": 3,
+    "partial_collapse_fraction": 0.5,
+    "pearson_divergence_flag": 0.1,
+    "overcontrol_feature": "yes_rate"
+  },
+  "spearman": {
+    "yes_rate × n_distinct_categories": {
+      "n": 844,
+      "ρ": 0.3501237408882791,
+      "p": 9.556807566660419e-26,
+      "magnitude": "moderada"
+    },
+    "yes_rate × category_entropy": {
+      "n": 844,
+      "ρ": 0.21023779969163428,
+      "p": 6.926001794715983e-10,
+      "magnitude": "fraca"
+    },
+    "yes_rate × mean_labels_per_item": {
+      "n": 844,
+      "ρ": 0.13652259365611197,
+      "p": 6.921260430254576e-05,
+      "magnitude": "desprezável"
+    },
+    "n_distinct_categories × category_entropy": {
+      "n": 844,
+      "ρ": 0.8395336916173365,
+      "p": 2.651359847025768e-225,
+      "magnitude": "forte"
+    },
+    "n_distinct_categories × mean_labels_per_item": {
+      "n": 844,
+      "ρ": 0.4431575423022941,
+      "p": 6.530072709741777e-42,
+      "magnitude": "moderada"
+    },
+    "category_entropy × mean_labels_per_item": {
+      "n": 844,
+      "ρ": 0.4570051126294325,
+      "p": 8.778610101391563e-45,
+      "magnitude": "moderada"
+    }
+  },
+  "pearson": {
+    "yes_rate × n_distinct_categories": {
+      "n": 844,
+      "ρ": 0.3643889028337779,
+      "p": 6.712341434166788e-28,
+      "magnitude": "moderada"
+    },
+    "yes_rate × category_entropy": {
+      "n": 844,
+      "ρ": 0.22499314476574755,
+      "p": 3.7994751154855434e-11,
+      "magnitude": "fraca"
+    },
+    "yes_rate × mean_labels_per_item": {
+      "n": 844,
+      "ρ": 0.1331398871611237,
+      "p": 0.00010467644391897794,
+      "magnitude": "desprezável"
+    },
+    "n_distinct_categories × category_entropy": {
+      "n": 844,
+      "ρ": 0.8703062124252505,
+      "p": 3.2624512763233696e-261,
+      "magnitude": "forte"
+    },
+    "n_distinct_categories × mean_labels_per_item": {
+      "n": 844,
+      "ρ": 0.37930668160880454,
+      "p": 2.8550579089264908e-30,
+      "magnitude": "moderada"
+    },
+    "category_entropy × mean_labels_per_item": {
+      "n": 844,
+      "ρ": 0.4032798340777253,
+      "p": 2.3886523222055005e-34,
+      "magnitude": "moderada"
+    }
+  },
+  "control_corr": {
+    "yes_rate": {
+      "n": 844,
+      "ρ com n_sexist_items": 0.9254372852254124,
+      "p": 0.0,
+      "magnitude": "forte"
+    },
+    "n_distinct_categories": {
+      "n": 844,
+      "ρ com n_sexist_items": 0.37709551532193863,
+      "p": 6.530669906233861e-30,
+      "magnitude": "moderada"
+    },
+    "category_entropy": {
+      "n": 844,
+      "ρ com n_sexist_items": 0.22440709047453256,
+      "p": 4.2807853494409116e-11,
+      "magnitude": "fraca"
+    },
+    "mean_labels_per_item": {
+      "n": 844,
+      "ρ com n_sexist_items": 0.1515893972376778,
+      "p": 9.73470443865297e-06,
+      "magnitude": "desprezável"
+    }
+  },
+  "partial_and_stratum": {
+    "yes_rate × n_distinct_categories": {
+      "ρ bruto": 0.3501237408882791,
+      "ρ parcial": 0.04544711121659968,
+      "ρ estratificado": 0.1183055503131005,
+      "Δ": -0.3046766296716794,
+      "magnitude (parcial)": "desprezável",
+      "leitura": "OVER-CONTROL"
+    },
+    "yes_rate × category_entropy": {
+      "ρ bruto": 0.21023779969163428,
+      "ρ parcial": 0.024162800394227236,
+      "ρ estratificado": 0.03930708617205297,
+      "Δ": -0.18607499929740703,
+      "magnitude (parcial)": "desprezável",
+      "leitura": "OVER-CONTROL"
+    },
+    "yes_rate × mean_labels_per_item": {
+      "ρ bruto": 0.13652259365611197,
+      "ρ parcial": -0.03393029277125541,
+      "ρ estratificado": 0.021055305103819352,
+      "Δ": -0.1704528864273674,
+      "magnitude (parcial)": "desprezável",
+      "leitura": "OVER-CONTROL"
+    },
+    "n_distinct_categories × category_entropy": {
+      "ρ bruto": 0.8395336916173365,
+      "ρ parcial": 0.8449820966626242,
+      "ρ estratificado": 0.8286483042674402,
+      "Δ": 0.005448405045287763,
+      "magnitude (parcial)": "forte",
+      "leitura": "controlo válido"
+    },
+    "n_distinct_categories × mean_labels_per_item": {
+      "ρ bruto": 0.4431575423022941,
+      "ρ parcial": 0.4076164933639147,
+      "ρ estratificado": 0.4210439609128905,
+      "Δ": -0.035541048938379394,
+      "magnitude (parcial)": "moderada",
+      "leitura": "controlo válido"
+    },
+    "category_entropy × mean_labels_per_item": {
+      "ρ bruto": 0.4570051126294325,
+      "ρ parcial": 0.42721015123012346,
+      "ρ estratificado": 0.44382133497069043,
+      "Δ": -0.02979496139930904,
+      "magnitude (parcial)": "moderada",
+      "leitura": "controlo válido"
+    }
+  },
+  "stratum_band": [
+    12,
+    18
+  ],
+  "stratum_n": 387,
+  "pca_raw_4": {
+    "n": 844,
+    "features": [
+      "yes_rate",
+      "n_distinct_categories",
+      "category_entropy",
+      "mean_labels_per_item"
+    ],
+    "explained": [
+      0.5713984113636094,
+      0.22239872869308597,
+      0.17698110996962108,
+      0.029221749973683507
+    ],
+    "cumulative": [
+      0.5713984113636094,
+      0.7937971400566953,
+      0.9707782500263165,
+      1.0
+    ],
+    "pc1_loadings": {
+      "yes_rate": 0.3205262175816919,
+      "n_distinct_categories": 0.614505646450258,
+      "category_entropy": 0.5982531450729152,
+      "mean_labels_per_item": 0.402167786792888
+    },
+    "pc1_explained": 0.5713984113636094,
+    "null_reference": 0.25,
+    "veredito": "DIMENSÃO LATENTE ÚNICA"
+  },
+  "pca_raw_3": {
+    "n": 844,
+    "features": [
+      "n_distinct_categories",
+      "category_entropy",
+      "mean_labels_per_item"
+    ],
+    "explained": [
+      0.7130513902329713,
+      0.24385520070165875,
+      0.04309340906536994
+    ],
+    "cumulative": [
+      0.7130513902329713,
+      0.95690659093463,
+      1.0
+    ],
+    "pc1_loadings": {
+      "n_distinct_categories": 0.6334069855780252,
+      "category_entropy": 0.6386203312164223,
+      "mean_labels_per_item": 0.43698931700670485
+    },
+    "pc1_explained": 0.7130513902329713,
+    "null_reference": 0.3333333333333333,
+    "veredito": "DIMENSÃO LATENTE ÚNICA"
+  },
+  "pca_resid_4": {
+    "n": 844,
+    "features": [
+      "yes_rate",
+      "n_distinct_categories",
+      "category_entropy",
+      "mean_labels_per_item"
+    ],
+    "explained": [
+      0.5325396905534961,
+      0.24784669905732465,
+      0.18705490318473442,
+      0.0325587072044449
+    ],
+    "cumulative": [
+      0.5325396905534961,
+      0.7803863896108207,
+      0.9674412927955551,
+      1.0
+    ],
+    "pc1_loadings": {
+      "yes_rate": 0.09312410168756277,
+      "n_distinct_categories": 0.6340152259977961,
+      "category_entropy": 0.6378349934898242,
+      "mean_labels_per_item": 0.4272225602279029
+    },
+    "pc1_explained": 0.5325396905534961,
+    "null_reference": 0.25,
+    "veredito": "ESTRUTURA PARCIAL — descrever associações específicas, não dimensão única"
+  },
+  "pca_resid_3": {
+    "n": 844,
+    "features": [
+      "n_distinct_categories",
+      "category_entropy",
+      "mean_labels_per_item"
+    ],
+    "explained": [
+      0.7067586451991206,
+      0.24955911847608972,
+      0.04368223632478991
+    ],
+    "cumulative": [
+      0.7067586451991206,
+      0.9563177636752103,
+      1.0000000000000002
+    ],
+    "pc1_loadings": {
+      "n_distinct_categories": 0.6361446621143031,
+      "category_entropy": 0.6417057681698345,
+      "mean_labels_per_item": 0.42840830519615486
+    },
+    "pc1_explained": 0.7067586451991206,
+    "null_reference": 0.3333333333333333,
+    "veredito": "DIMENSÃO LATENTE ÚNICA"
+  },
+  "supported": [
+    "`[MEDIDO]` Entre as três features de categoria, as correlações de Spearman ao nível individual chegam a |ρ| = 0.8395 (forte), n = 844.",
+    "`[MEDIDO]` Nos pares que envolvem `yes_rate`, |ρ| máximo = 0.3501 (moderada).",
+    "`[MEDIDO]` O PC1 das quatro features explica 57.1% da variância com todas as loadings do mesmo sinal — passa o limiar pré-registado de 55%, por **+2.1 pontos**. A formulação \"dimensão latente única\" é sustentável ao nível individual, **desde que dita com a percentagem, com a margem, e com a composição do eixo da §1.4** — a força vem das features de categoria, não de `yes_rate`.",
+    "`[MEDIDO]` As loadings do PC1 têm todas o mesmo sinal — a direção \"expansivo ↔ parcimonioso\" descreve corretamente o eixo, independentemente da força dele.",
+    "`[MEDIDO]` Nenhuma das 3 associações entre features de categoria colapsa ao controlar por `n_sexist_items`: não são artefacto de tamanho de amostra.",
+    "`[MEDIDO]` Depois de residualizar as três features de categoria em `n_sexist_items`, o PC1 passa de 71.3% para 70.7% (nulidade 33%). É a versão da estrutura livre do artefacto do denominador.",
+    "`[MEDIDO]` A estrutura entre as features de categoria é forte (ρ até +0.8395) **mas parcialmente definicional** — a declarar sempre que o PC1 dessas três for citado.",
+    "`[MEDIDO]` **Descontando o par definicional, o achado mantém-se:** as 2 associações restantes entre features de categoria não têm ligação matemática entre si e sobrevivem ao controlo — `n_distinct_categories × mean_labels_per_item` (bruto +0.443 → parcial +0.408) e `category_entropy × mean_labels_per_item` (bruto +0.457 → parcial +0.427). A ressalva definicional atinge um par, não a estrutura toda."
+  ],
+  "unsupported": [
+    "❌ Apresentar as três features de categoria como três medições independentes do mesmo comportamento. ρ(`n_distinct_categories`, `category_entropy`) = +0.8395 e a ligação é em parte **definicional** — a entropia normalizada é limitada por `log(n_distinct_categories)`. O PC1 das três sobrestima a evidência independente.",
+    "❌ Afirmar que `yes_rate` faz parte da mesma dimensão latente que as features de categoria. Em bruto |ρ| ≤ 0.3501; no estrato cai para |ρ| ≤ 0.1183 (desprezável). A loading de `yes_rate` no PC1 é a mais fraca das quatro (+0.3205).",
+    "❌ Afirmar o contrário — que `yes_rate` **não** faz parte da dimensão. Os dois controlos disponíveis atenuam a associação pela mesma razão (ambos controlam sobre um quase-duplicado de `yes_rate`) e nenhum a resolve. A questão fica em aberto por limitação dos dados, e é assim que deve ser escrita.",
+    "❌ Citar a parcial dos pares com `yes_rate` como prova de artefacto. ρ(`n_sexist_items`, `yes_rate`) = +0.9254 — é over-control.",
+    "❌ Reutilizar a formulação original de `behavioral_diagnosis.md` §6.3, que inferiu a dimensão latente **da comparação entre centróides do KMeans**. Esse argumento é circular e fica substituído por esta análise, qualquer que seja a direção do resultado.",
+    "❌ Qualquer leitura destes eixos como qualidade, fiabilidade ou competência de anotação. Nenhuma feature aqui mede acerto."
+  ]
+}

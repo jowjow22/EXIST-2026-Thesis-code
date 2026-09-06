@@ -1,0 +1,141 @@
+{
+  "seeds": [
+    42,
+    7,
+    2025,
+    101,
+    777
+  ],
+  "rows": [
+    {
+      "votes_per_item": 2,
+      "votes_per_annotator": 27,
+      "n_items": 4050,
+      "bias_naive": 0.004341771168623864,
+      "bias_loo": -0.150739140292455,
+      "bias_oracle": 0.003366346808342336,
+      "excess_bias_vs_oracle": 0.0009754243602815285,
+      "excess_removed_by_loo": 0.15508091146107886,
+      "sd_bias_naive": 0.010199591946535412,
+      "r_naive": 0.4765766311184219,
+      "r_loo": 0.49778815665708737
+    },
+    {
+      "votes_per_item": 3,
+      "votes_per_annotator": 27,
+      "n_items": 2700,
+      "bias_naive": 0.002451965103823936,
+      "bias_loo": -0.10594604542468264,
+      "bias_oracle": 0.0030075935114051307,
+      "excess_bias_vs_oracle": -0.0005556284075811948,
+      "excess_removed_by_loo": 0.10839801052850657,
+      "sd_bias_naive": 0.006693875048582097,
+      "r_naive": 0.6346912761652854,
+      "r_loo": 0.6439469329204892
+    },
+    {
+      "votes_per_item": 4,
+      "votes_per_annotator": 27,
+      "n_items": 2025,
+      "bias_naive": 0.0034694448561278708,
+      "bias_loo": -0.07395888872698717,
+      "bias_oracle": 0.0039991064208030995,
+      "excess_bias_vs_oracle": -0.0005296615646752287,
+      "excess_removed_by_loo": 0.07742833358311503,
+      "sd_bias_naive": 0.00802276791204499,
+      "r_naive": 0.7037288414833933,
+      "r_loo": 0.7001493806079989
+    },
+    {
+      "votes_per_item": 6,
+      "votes_per_annotator": 27,
+      "n_items": 1350,
+      "bias_naive": 0.003489999115213557,
+      "bias_loo": -0.040631993366909744,
+      "bias_oracle": 0.004500239294740575,
+      "excess_bias_vs_oracle": -0.0010102401795270182,
+      "excess_removed_by_loo": 0.0441219924821233,
+      "sd_bias_naive": 0.008303632647564388,
+      "r_naive": 0.772151617051767,
+      "r_loo": 0.772140129326657
+    },
+    {
+      "votes_per_item": 10,
+      "votes_per_annotator": 27,
+      "n_items": 810,
+      "bias_naive": 0.0036050747737235863,
+      "bias_loo": -0.009754615108037322,
+      "bias_oracle": 0.003705458120411176,
+      "excess_bias_vs_oracle": -0.00010038334668758956,
+      "excess_removed_by_loo": 0.013359689881760908,
+      "sd_bias_naive": 0.006769048949982129,
+      "r_naive": 0.791106065471371,
+      "r_loo": 0.7892299044806499
+    },
+    {
+      "votes_per_item": 2,
+      "votes_per_annotator": 108,
+      "n_items": 16200,
+      "bias_naive": 0.002615722176155113,
+      "bias_loo": -0.1662479814290673,
+      "bias_oracle": 0.001356714451026567,
+      "excess_bias_vs_oracle": 0.001259007725128546,
+      "excess_removed_by_loo": 0.1688637036052224,
+      "sd_bias_naive": 0.003077845512923308,
+      "r_naive": 0.7860119520435629,
+      "r_loo": 0.781356992352004
+    },
+    {
+      "votes_per_item": 3,
+      "votes_per_annotator": 108,
+      "n_items": 10800,
+      "bias_naive": 0.0014825486126130946,
+      "bias_loo": -0.12222565736145281,
+      "bias_oracle": 0.0010623124888861847,
+      "excess_bias_vs_oracle": 0.00042023612372690984,
+      "excess_removed_by_loo": 0.12370820597406591,
+      "sd_bias_naive": 0.0023629884471555716,
+      "r_naive": 0.8752187850327644,
+      "r_loo": 0.8699884776581326
+    },
+    {
+      "votes_per_item": 4,
+      "votes_per_annotator": 108,
+      "n_items": 8100,
+      "bias_naive": 0.00011453672205227515,
+      "bias_loo": -0.09304096911763493,
+      "bias_oracle": 0.0003118132135042662,
+      "excess_bias_vs_oracle": -0.00019727649145199105,
+      "excess_removed_by_loo": 0.09315550583968721,
+      "sd_bias_naive": 0.002231095513943117,
+      "r_naive": 0.9072641040937466,
+      "r_loo": 0.9048034078473345
+    },
+    {
+      "votes_per_item": 6,
+      "votes_per_annotator": 108,
+      "n_items": 5400,
+      "bias_naive": 0.0009486880565959431,
+      "bias_loo": -0.05381555981487528,
+      "bias_oracle": 0.0014442316869371786,
+      "excess_bias_vs_oracle": -0.0004955436303412355,
+      "excess_removed_by_loo": 0.054764247871471224,
+      "sd_bias_naive": 0.0017849808214754146,
+      "r_naive": 0.9270265116725985,
+      "r_loo": 0.9236650468677776
+    },
+    {
+      "votes_per_item": 10,
+      "votes_per_annotator": 108,
+      "n_items": 3240,
+      "bias_naive": -0.00016515142467562514,
+      "bias_loo": -0.020932260565887994,
+      "bias_oracle": -9.558682806692356e-05,
+      "excess_bias_vs_oracle": -6.956459660870158e-05,
+      "excess_removed_by_loo": 0.020767109141212367,
+      "sd_bias_naive": 0.0016371516126729938,
+      "r_naive": 0.9384281488423147,
+      "r_loo": 0.9372889762659673
+    }
+  ]
+}

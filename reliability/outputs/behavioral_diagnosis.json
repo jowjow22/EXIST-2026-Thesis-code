@@ -1,0 +1,394 @@
+{
+  "seed": 42,
+  "n_annotators": 887,
+  "prereg": {
+    "cluster_min_fraction": 0.05,
+    "cluster_min_silhouette": 0.25,
+    "dispersion_min_unique": 10,
+    "dispersion_max_modal_bin": 0.6,
+    "dispersion_min_iqr_fraction": 0.1,
+    "low_vote_threshold": 15,
+    "nan_policy": "complete-case",
+    "thresholds_extracao": {
+      "MIN_SEXIST_ITEMS": 5,
+      "MIN_NO_VOTES": 5,
+      "MIN_YES_VOTES": 5,
+      "MIN_VOTES_PER_LANG": 5
+    }
+  },
+  "dispersion_verdicts": {
+    "yes_rate": "dispersa",
+    "unknown_rate_b": "concentrada",
+    "unknown_rate_c": "concentrada",
+    "n_distinct_categories": "concentrada",
+    "category_entropy": "dispersa",
+    "mean_labels_per_item": "concentrada",
+    "incoherence_A_to_C": "degenerada",
+    "incoherence_A_to_B": "degenerada",
+    "incoherence_yes_empty": "concentrada",
+    "yes_rate_en": "dispersa",
+    "yes_rate_es": "dispersa",
+    "lang_gap": "dispersa"
+  },
+  "anomaly_counts": {
+    "yes_rate_extremo": 61,
+    "categoria_unica": 0,
+    "incoerencia_AC_qualquer": 0,
+    "incoerencia_AC_sistematica": 0,
+    "incoerencia_AB_sistematica": 0,
+    "lang_gap_grande": 5
+  },
+  "anomaly_ids": {
+    "yes_rate_extremo": [
+      "Annotator_110",
+      "Annotator_135",
+      "Annotator_158",
+      "Annotator_159",
+      "Annotator_160",
+      "Annotator_191",
+      "Annotator_212",
+      "Annotator_234",
+      "Annotator_247",
+      "Annotator_253",
+      "Annotator_273",
+      "Annotator_277",
+      "Annotator_286",
+      "Annotator_293",
+      "Annotator_295",
+      "Annotator_299",
+      "Annotator_300",
+      "Annotator_307",
+      "Annotator_310",
+      "Annotator_329",
+      "Annotator_364",
+      "Annotator_365",
+      "Annotator_374",
+      "Annotator_386",
+      "Annotator_483",
+      "Annotator_484",
+      "Annotator_492",
+      "Annotator_494",
+      "Annotator_505",
+      "Annotator_532",
+      "Annotator_533",
+      "Annotator_544",
+      "Annotator_558",
+      "Annotator_568",
+      "Annotator_584",
+      "Annotator_586",
+      "Annotator_599",
+      "Annotator_611",
+      "Annotator_649",
+      "Annotator_652",
+      "Annotator_671",
+      "Annotator_675",
+      "Annotator_692",
+      "Annotator_693",
+      "Annotator_736",
+      "Annotator_737",
+      "Annotator_738",
+      "Annotator_743",
+      "Annotator_758",
+      "Annotator_768",
+      "Annotator_775",
+      "Annotator_81",
+      "Annotator_811",
+      "Annotator_824",
+      "Annotator_843",
+      "Annotator_847",
+      "Annotator_861",
+      "Annotator_864",
+      "Annotator_885",
+      "Annotator_886",
+      "Annotator_93"
+    ],
+    "categoria_unica": [],
+    "incoerencia_AC_qualquer": [],
+    "incoerencia_AC_sistematica": [],
+    "incoerencia_AB_sistematica": [],
+    "lang_gap_grande": [
+      "Annotator_11",
+      "Annotator_148",
+      "Annotator_187",
+      "Annotator_199",
+      "Annotator_285"
+    ]
+  },
+  "clustering": [
+    {
+      "K": 2,
+      "tamanhos": [
+        792,
+        52
+      ],
+      "min_frac": 0.061611374407582936,
+      "silhouette": 0.5432300262094084,
+      "veredito": "PASS"
+    },
+    {
+      "K": 3,
+      "tamanhos": [
+        52,
+        317,
+        475
+      ],
+      "min_frac": 0.061611374407582936,
+      "silhouette": 0.29598469218803436,
+      "veredito": "PASS"
+    },
+    {
+      "K": 4,
+      "tamanhos": [
+        424,
+        286,
+        83,
+        51
+      ],
+      "min_frac": 0.06042654028436019,
+      "silhouette": 0.3225869967987329,
+      "veredito": "PASS"
+    },
+    {
+      "K": 5,
+      "tamanhos": [
+        115,
+        170,
+        426,
+        82,
+        51
+      ],
+      "min_frac": 0.06042654028436019,
+      "silhouette": 0.29617616848988126,
+      "veredito": "PASS"
+    },
+    {
+      "K": 6,
+      "tamanhos": [
+        51,
+        231,
+        163,
+        89,
+        228,
+        82
+      ],
+      "min_frac": 0.06042654028436019,
+      "silhouette": 0.2806343490808524,
+      "veredito": "PASS"
+    }
+  ],
+  "clustering_meta": {
+    "features_usadas": [
+      "yes_rate",
+      "unknown_rate_b",
+      "unknown_rate_c",
+      "n_distinct_categories",
+      "category_entropy",
+      "mean_labels_per_item",
+      "incoherence_yes_empty"
+    ],
+    "features_excluidas": [
+      [
+        "incoherence_A_to_C",
+        "variância nula"
+      ],
+      [
+        "incoherence_A_to_B",
+        "variância nula"
+      ]
+    ],
+    "n_anotadores_clusterizados": 844,
+    "n_excluidos_por_nan": 43,
+    "standardizacao": {
+      "yes_rate": {
+        "media": 0.5815790135240176,
+        "std": 0.18997484390888122
+      },
+      "unknown_rate_b": {
+        "media": 0.00551269276052915,
+        "std": 0.01587257775101871
+      },
+      "unknown_rate_c": {
+        "media": 0.00291743998497553,
+        "std": 0.012321642284211978
+      },
+      "n_distinct_categories": {
+        "media": 4.210900473933649,
+        "std": 0.8629139679950215
+      },
+      "category_entropy": {
+        "media": 0.7582417217123513,
+        "std": 0.16126854351592054
+      },
+      "mean_labels_per_item": {
+        "media": 1.3198843133546232,
+        "std": 0.37206662742191493
+      },
+      "incoherence_yes_empty": {
+        "media": 0.0053240127509590115,
+        "std": 0.0232941506280128
+      }
+    }
+  },
+  "posthoc_sensitivity": {
+    "nota": "POST-HOC, nao pre-registada. Ver behavioral_diagnosis_observacoes.md.",
+    "features": [
+      "yes_rate",
+      "n_distinct_categories",
+      "category_entropy",
+      "mean_labels_per_item"
+    ],
+    "n_anotadores": 844,
+    "resultados": [
+      {
+        "K": 2,
+        "tamanhos": [
+          509,
+          335
+        ],
+        "min_frac": 0.39691943127962087,
+        "silhouette": 0.34150360405513197,
+        "veredito": "PASS"
+      },
+      {
+        "K": 3,
+        "tamanhos": [
+          139,
+          190,
+          515
+        ],
+        "min_frac": 0.1646919431279621,
+        "silhouette": 0.30986494987195856,
+        "veredito": "PASS"
+      },
+      {
+        "K": 4,
+        "tamanhos": [
+          279,
+          186,
+          111,
+          268
+        ],
+        "min_frac": 0.13151658767772512,
+        "silhouette": 0.2936647302685573,
+        "veredito": "PASS"
+      },
+      {
+        "K": 5,
+        "tamanhos": [
+          196,
+          234,
+          161,
+          105,
+          148
+        ],
+        "min_frac": 0.12440758293838862,
+        "silhouette": 0.28626127771090776,
+        "veredito": "PASS"
+      },
+      {
+        "K": 6,
+        "tamanhos": [
+          150,
+          159,
+          158,
+          98,
+          128,
+          151
+        ],
+        "min_frac": 0.11611374407582939,
+        "silhouette": 0.27552378087755935,
+        "veredito": "PASS"
+      }
+    ],
+    "zero_inflation": {
+      "yes_rate": {
+        "n": 887,
+        "zeros": 2,
+        "fracção de zeros": 0.002254791431792559,
+        "indicador?": "não"
+      },
+      "unknown_rate_b": {
+        "n": 887,
+        "zeros": 781,
+        "fracção de zeros": 0.8804960541149943,
+        "indicador?": "SIM"
+      },
+      "unknown_rate_c": {
+        "n": 887,
+        "zeros": 834,
+        "fracção de zeros": 0.9402480270574972,
+        "indicador?": "SIM"
+      },
+      "n_distinct_categories": {
+        "n": 844,
+        "zeros": 0,
+        "fracção de zeros": 0.0,
+        "indicador?": "não"
+      },
+      "category_entropy": {
+        "n": 844,
+        "zeros": 0,
+        "fracção de zeros": 0.0,
+        "indicador?": "não"
+      },
+      "mean_labels_per_item": {
+        "n": 844,
+        "zeros": 0,
+        "fracção de zeros": 0.0,
+        "indicador?": "não"
+      },
+      "incoherence_yes_empty": {
+        "n": 844,
+        "zeros": 792,
+        "fracção de zeros": 0.9383886255924171,
+        "indicador?": "SIM"
+      }
+    }
+  },
+  "structural_audit": {
+    "n_votes": 23904,
+    "n_items": 3984,
+    "n_annotators": 887,
+    "crosstab_a_b": {
+      "NO|-": 10618,
+      "YES|DIRECT": 8471,
+      "YES|JUDGEMENTAL": 4688,
+      "YES|UNKNOWN": 127
+    },
+    "crosstab_a_c": {
+      "NO|DASH": 10618,
+      "YES|CATEGORIA": 13221,
+      "YES|UNKNOWN": 65
+    },
+    "annotators_by_lang": {
+      "es": 437,
+      "en": 431,
+      "both": 19
+    },
+    "n_length_mismatch": 0,
+    "inconsistent_demo": [
+      [
+        "Annotator_125",
+        "countries_annotators",
+        {
+          "Romania": 27,
+          "Spain": 27
+        }
+      ],
+      [
+        "Annotator_187",
+        "study_levels_annotators",
+        {
+          "Bachelor's degree": 24,
+          "Master's degree": 27
+        }
+      ]
+    ],
+    "thresholds": {
+      "MIN_SEXIST_ITEMS": 5,
+      "MIN_NO_VOTES": 5,
+      "MIN_YES_VOTES": 5,
+      "MIN_VOTES_PER_LANG": 5
+    }
+  }
+}

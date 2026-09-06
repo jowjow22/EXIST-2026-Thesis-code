@@ -1,0 +1,37 @@
+{
+  "thresholds": [
+    0.5,
+    0.3,
+    0.6000000000000001,
+    0.05,
+    0.15000000000000002,
+    0.25
+  ],
+  "label_order": [
+    "NONE",
+    "IDEOLOGICAL-INEQUALITY",
+    "MISOGYNY-NON-SEXUAL-VIOLENCE",
+    "SEXUAL-VIOLENCE",
+    "OBJECTIFICATION",
+    "STEREOTYPING-DOMINANCE"
+  ],
+  "split_seed": 42,
+  "n_tune": 252,
+  "n_report": 253,
+  "scores_on_tune_half": {
+    "ICM": -0.5141628286425473,
+    "ICMNorm": 0.3772276142115646,
+    "FMeasure": NaN
+  },
+  "scores_on_report_half": {
+    "ICM": -0.6789341208960643,
+    "ICMNorm": 0.3321544655404081,
+    "FMeasure": NaN
+  },
+  "scores_on_report_half_default_0.5": {
+    "ICM": -0.7357520606779899,
+    "ICMNorm": 0.3181079812408657,
+    "FMeasure": NaN
+  },
+  "note": "Limiares ajustados na metade de AJUSTE e aplicados \u00e0 metade de REPORTE. O n\u00famero report\u00e1vel \u00e9 `scores_on_report_half`. `NONE` fica fixo em 0.5 por constru\u00e7\u00e3o (ARCH-10)."
+}

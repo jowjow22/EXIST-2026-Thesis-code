@@ -1,0 +1,237 @@
+"""Estimador EM de confiabilidade de anotadores com verdade por subpopulação.
+
+Espírito do NUTMEG (Ivey et al., EMNLP 2025): ao contrário do MACE, existe uma
+verdade latente T[i, k] por (item, subpopulação) em vez de uma única por item.
+Isso impede o modelo de punir discordância sistemática legítima (o núcleo do
+paradigma Learning with Disagreement) como se fosse ruído.
+
+Implementação própria por Expectation-Maximization, com updates fechados e
+inspecionáveis. Variational-Bayes fica como extensão futura documentada — NÃO
+implementada nesta fase, por escolha de debugabilidade.
+
+Modelo
+------
+    T[i, k] ~ Uniform({0..L-1})
+    voto de j (subpop k=subpop[j]) no item i:
+        com prob theta[j]      -> T[i, k]
+        com prob 1 - theta[j]  -> ~ Multinomial(xi[j])
+
+E-step  : posterior de T[i, k] dados theta, xi.
+M-step  : responsabilidade de spam por voto -> theta[j], xi[j].
+Priors  : Beta(0.5, 0.5) em theta, Dirichlet(0.5) em xi (suaves, estabilizam).
+"""
+
+from __future__ import annotations
+
+import numpy as np
+
+EPS = 1e-12
+
+# Priors suaves (Jeffreys). Constantes de módulo para ficarem inspecionáveis.
+THETA_PRIOR_A = 0.5
+THETA_PRIOR_B = 0.5
+XI_PRIOR = 0.5
+
+THETA_INIT = 0.8  # init determinístico; ver nota de inicialização no fit()
+THETA_CLIP = (1e-3, 1.0 - 1e-3)
+
+
+class NutmegEM:
+    """EM para theta (competência) por anotador, com verdade por subpopulação.
+
+    Atributos pós-`fit`
+    -------------------
+    theta_        : ndarray (M,)          competência estimada (prob. de NÃO spammar)
+    xi_           : ndarray (M, L)        distribuição de ruído por anotador
+    posterior_T_  : ndarray (N, K, L)     posterior da verdade por (item, subpop)
+    loglik_history_ : list[float]         log-verossimilhança por iteração
+    n_votes_      : ndarray (M,)          votos observados por anotador
+    cell_has_votes_ : ndarray (N, K) bool células (item, subpop) com >=1 voto
+    n_iter_run_   : int
+    converged_    : bool
+    """
+
+    def __init__(self, n_labels: int = 2):
+        # n_labels > 2 já é suportado pela formulação (gancho para a Task B,
+        # single-label multiclasse). Task C (multilabel) exigiria um modelo
+        # diferente — gancho deixado por escrever, de propósito.
+        self.n_labels = int(n_labels)
+
+    # ------------------------------------------------------------------ fit
+    def fit(
+        self,
+        annotations,
+        subpop,
+        n_iter: int = 200,
+        tol: float = 1e-6,
+        verbose: bool = False,
+        n_restarts: int = 1,
+        restart_seed: int = 0,
+    ):
+        """Ajusta o modelo.
+
+        Parameters
+        ----------
+        annotations : array-like (n_votes, 3) -> (item_id, annotator_id, label).
+            item_id em [0, N), annotator_id em [0, M), label em [0, L).
+        subpop : array-like (M,) -> índice de subpopulação em [0, K).
+            Passar `np.zeros(M)` reproduz o baseline single-truth (tipo-MACE):
+            é o MESMO caminho de código, K=1.
+        n_iter : máximo de iterações EM.
+        tol : critério de paragem em |delta log-lik|.
+        verbose : imprime log-lik e min/max/mean(theta) por iteração.
+        n_restarts : >1 perturba o init de theta e fica com o melhor log-lik.
+            Default 1 — o init determinístico abaixo já é estável.
+
+        Returns
+        -------
+        self
+        """
+        ann = np.asarray(annotations, dtype=int)
+        assert ann.ndim == 2 and ann.shape[1] == 3, f"annotations shape {ann.shape}"
+        subpop = np.asarray(subpop, dtype=int)
+
+        items, anns, labels = ann[:, 0], ann[:, 1], ann[:, 2]
+        M = int(subpop.shape[0])
+        N = int(items.max()) + 1 if len(items) else 0
+        K = int(subpop.max()) + 1 if M else 0
+        L = self.n_labels
+        assert anns.max(initial=-1) < M, "annotator_id fora do range de subpop"
+        assert labels.max(initial=-1) < L, "label fora do range de n_labels"
+
+        cells = subpop[anns]  # subpop de cada voto, shape (n_votes,)
+        n_votes = np.bincount(anns, minlength=M)
+
+        cell_has_votes = np.zeros((N, K), dtype=bool)
+        cell_has_votes[items, cells] = True
+
+        if verbose:
+            print(
+                f"[NutmegEM] N={N} M={M} K={K} L={L} n_votes={len(ann)} | "
+                f"células com votos={int(cell_has_votes.sum())}/{N * K} "
+                f"({100.0 * cell_has_votes.mean():.1f}%) | "
+                f"anotadores com 0 votos={int((n_votes == 0).sum())}"
+            )
+
+        best = None
+        rng = np.random.default_rng(restart_seed)
+        for r in range(max(1, n_restarts)):
+            # --- INIT determinístico (r=0) -------------------------------
+            # theta=0.8 + xi uniforme faz o primeiro E-step colapsar no voto
+            # maioritário suavizado por (item, subpop) -- que é exatamente o
+            # init recomendado. Init aleatório converge para soluções
+            # degeneradas ("toda a gente spamma, xi explica tudo") ou inverte
+            # T nos itens divisivos.
+            theta = np.full(M, THETA_INIT)
+            if r > 0:
+                theta = np.clip(theta + rng.normal(0, 0.1, size=M), *THETA_CLIP)
+            xi = np.full((M, L), 1.0 / L)
+
+            loglik_history = []
+            prev_ll = -np.inf
+            converged = False
+            it = 0
+            posterior = None
+            for it in range(1, n_iter + 1):
+                posterior, ll = self._e_step(
+                    items, anns, cells, labels, theta, xi, N, K, L, cell_has_votes
+                )
+                theta, xi = self._m_step(
+                    items, anns, cells, labels, theta, xi, posterior, M, L, n_votes
+                )
+                loglik_history.append(float(ll))
+                if verbose:
+                    print(
+                        f"  it {it:3d} | loglik={ll:14.4f} | theta "
+                        f"min={theta.min():.3f} mean={theta.mean():.3f} "
+                        f"max={theta.max():.3f}"
+                    )
+                if abs(ll - prev_ll) < tol:
+                    converged = True
+                    break
+                prev_ll = ll
+
+            # posterior final coerente com o theta/xi finais
+            posterior, ll = self._e_step(
+                items, anns, cells, labels, theta, xi, N, K, L, cell_has_votes
+            )
+            if best is None or ll > best[0]:
+                best = (ll, theta, xi, posterior, loglik_history, converged, it)
+
+        ll, theta, xi, posterior, loglik_history, converged, it = best
+        assert theta.shape == (M,), theta.shape
+        assert xi.shape == (M, L), xi.shape
+        assert posterior.shape == (N, K, L), posterior.shape
+        assert np.isfinite(theta).all(), "theta contém NaN/inf"
+
+        self.theta_ = theta
+        self.xi_ = xi
+        self.posterior_T_ = posterior
+        self.loglik_history_ = loglik_history
+        self.final_loglik_ = float(ll)
+        self.n_votes_ = n_votes
+        self.cell_has_votes_ = cell_has_votes
+        self.n_iter_run_ = it
+        self.converged_ = converged
+        return self
+
+    # --------------------------------------------------------------- E-step
+    @staticmethod
+    def _e_step(items, anns, cells, labels, theta, xi, N, K, L, cell_has_votes):
+        """Posterior de T[i, k] dados theta e xi. Devolve (posterior (N,K,L), loglik).
+
+        Para cada voto v de j: P(v | T=l) = theta_j * 1{v==l} + (1-theta_j) * xi_j[v].
+        Acumulado em log-espaço; células (i,k) sem votos ficam no prior uniforme
+        e contribuem 0 para a log-lik.
+        """
+        th = theta[anns]                       # (n_votes,)
+        xv = xi[anns, labels]                  # (n_votes,)
+        base = np.log((1.0 - th) * xv + EPS)   # contribuição para l != voto
+        agree = np.log(th + (1.0 - th) * xv + EPS)  # contribuição para l == voto
+
+        contrib = np.repeat(base[:, None], L, axis=1)      # (n_votes, L)
+        contrib[np.arange(len(labels)), labels] = agree
+
+        logp = np.zeros((N, K, L))             # prior uniforme -> constante, omitida
+        np.add.at(logp, (items, cells), contrib)
+
+        mx = logp.max(axis=2, keepdims=True)
+        exp = np.exp(logp - mx)
+        s = exp.sum(axis=2, keepdims=True)
+        posterior = exp / (s + EPS)
+        # log P(votos da célula) = log sum_l exp(logp) - log L (prior uniforme)
+        cell_ll = (mx[..., 0] + np.log(s[..., 0] + EPS)) - np.log(L)
+        loglik = float(cell_ll[cell_has_votes].sum())
+        return posterior, loglik
+
+    # --------------------------------------------------------------- M-step
+    @staticmethod
+    def _m_step(items, anns, cells, labels, theta, xi, posterior, M, L, n_votes):
+        """Reestima theta e xi a partir das responsabilidades de spam por voto.
+
+        r_notspam = theta_j * P(T=voto) / (theta_j * P(T=voto) + (1-theta_j) * xi_j[voto])
+        theta_j   = (sum r_notspam + a) / (n_j + a + b)              [Beta(a,b)]
+        xi_j[v]   = (sum_{voto=v} r_spam + c) / (sum r_spam + c*L)   [Dirichlet(c)]
+        """
+        p_true = posterior[items, cells, labels]   # (n_votes,) P(T[i,k] == voto)
+        th = theta[anns]
+        xv = xi[anns, labels]
+        num = th * p_true
+        den = num + (1.0 - th) * xv + EPS
+        r_notspam = num / den
+        r_spam = 1.0 - r_notspam
+
+        sum_notspam = np.bincount(anns, weights=r_notspam, minlength=M)
+        new_theta = (sum_notspam + THETA_PRIOR_A) / (
+            n_votes + THETA_PRIOR_A + THETA_PRIOR_B
+        )
+        # anotador com 0 votos -> media do prior (0.5), sem NaN: a fórmula já dá isso.
+        new_theta = np.clip(new_theta, *THETA_CLIP)
+
+        flat = anns * L + labels
+        spam_counts = np.bincount(flat, weights=r_spam, minlength=M * L).reshape(M, L)
+        new_xi = (spam_counts + XI_PRIOR) / (
+            spam_counts.sum(axis=1, keepdims=True) + XI_PRIOR * L
+        )
+        assert new_theta.shape == (M,) and new_xi.shape == (M, L)
+        return new_theta, new_xi

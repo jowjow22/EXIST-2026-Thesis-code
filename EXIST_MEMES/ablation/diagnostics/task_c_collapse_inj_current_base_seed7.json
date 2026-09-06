@@ -1,0 +1,52 @@
+{
+  "config_name": "inj_current_base",
+  "seed": 7,
+  "n_val_items": 598,
+  "labels": [
+    "NONE",
+    "IDEOLOGICAL-INEQUALITY",
+    "MISOGYNY-NON-SEXUAL-VIOLENCE",
+    "SEXUAL-VIOLENCE",
+    "OBJECTIFICATION",
+    "STEREOTYPING-DOMINANCE"
+  ],
+  "inter_item_variance_per_class": [
+    0.07612983137369156,
+    0.03700798749923706,
+    0.004262061789631844,
+    0.013395183719694614,
+    0.03145769238471985,
+    0.02010389417409897
+  ],
+  "mean_pred_per_class": [
+    0.45504868030548096,
+    0.16938605904579163,
+    0.06313788890838623,
+    0.07540398836135864,
+    0.16710492968559265,
+    0.1673816442489624
+  ],
+  "train_base_rate_per_class": [
+    0.8594211458948612,
+    0.5082693443591259,
+    0.344949793266391,
+    0.29533372711163614,
+    0.5451860602480804,
+    0.6045481393975192
+  ],
+  "abs_diff_mean_vs_baserate": [
+    0.4043724655893802,
+    0.3388832853133342,
+    0.2818119043580048,
+    0.2199297387502775,
+    0.3780811305624877,
+    0.43716649514855677
+  ],
+  "mean_pairwise_cosine_between_items": 0.6681674627955241,
+  "mean_inter_item_variance": 0.030392775156845648,
+  "mean_abs_diff_vs_baserate": 0.3433741699536735,
+  "collapse_variance_threshold": 0.0001,
+  "collapse_baserate_diff_threshold": 0.02,
+  "collapsed": false,
+  "verdict": "[OK] head de Task C discrimina entre itens."
+}

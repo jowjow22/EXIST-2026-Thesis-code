@@ -19,6 +19,12 @@ env/
 Dataset/
 frames/
 audio_features/
+# Exceção: o split treino/validação congelado é um ARTEFATO DE PROTOCOLO, não dado.
+# Tem de ser versionado para que "as 9 runs da ablação partilham o mesmo val" seja
+# verificável e não uma promessa (04_RECONCILIATION §6.2). São ~35 KB de id_EXIST.
+!*/Dataset/
+*/Dataset/*
+!*/Dataset/val_split_*.json
 
 # === Checkpoints e modelos treinados ===
 best_model/
