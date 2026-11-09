@@ -1,0 +1,29 @@
+digraph G {
+  graph [rankdir=TB, fontname="Helvetica", nodesep=0.35, ranksep=0.42, bgcolor="#fcfcfb", pad=0.25];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#ffffff", color="#52514e", penwidth=1.2, margin="0.18,0.08"];
+  edge  [color="#52514e", fontname="Helvetica", fontsize=9.5, fontcolor="#52514e"];
+
+  subgraph cluster_glm { label="GLM-4.6V-Flash (vLLM local, FP8) · P1–P3 · temp 0,1 · top_p 0,6 · top_k 2 · rep 1,1"; fontname="Helvetica"; fontsize=11; color="#2a78d6"; style="rounded"; fontcolor="#2a78d6";
+    f0  [label="F0 · infraestrutura\nsonda visual 20/20 + 20/20\nthinking off = 4 tokens"];
+    f1  [label="F1 · piloto 240 memes × 2 braços × 3 paráfrases\n(1 440 chamadas) → escolhe think_off"];
+    f1b [label="F1b · estabilidade entre seeds 42/43/44 (P1)\nflip 1/240 = 0,0042 → G1 aprovado"];
+    f2  [label="F2 · referência no treino (3 386 memes, 10 158 chamadas)\nconfiantes es 0,6912 < 0,70 → G2 FALHOU", fillcolor="#fde8e1", color="#c2410c"];
+    d26 [label="Doc 26 · fatorial 2×2 da estrutura do prompt\npré-registrado, ainda não executado", style="rounded,dashed", fillcolor="#f4f4f2"];
+    d27 [label="Doc 27 · peso r = 1 − D (distância ao p_GLM)\nG4 aprovado · F5: ΔICM-Soft +0,0074, p = 0,107 → nulo"];
+    d28 [label="Doc 28 · peso r⁴\nF5: eval_loss +0,0988, p = 0,029 → pior"];
+    d29 [label="Doc 29 · mistura GLM corrigido por quantis\nRASCUNHO (só teste offline split-half)", style="rounded,dashed", fillcolor="#f4f4f2"];
+    d30 [label="Doc 30 · think_on no treino inteiro (10 158 chamadas)\nYES 0,711 vs humanos 0,555 → viés PERSISTE"];
+  }
+  ext [label="Seleção dos extremos (treino)\n1Y5N 388 · 3Y3N 518 · 5Y1N 645 = 1 551 memes\nvisualizador local para avaliação manual", fillcolor="#f1f0ec"];
+  subgraph cluster_cl { labelloc="b"; label="Claude Sonnet 5.5 (Message Batches API) · mesmos P1–P3, imagens e textos"; fontname="Helvetica"; fontsize=11; color="#0f8f6a"; style="rounded"; fontcolor="#0f8f6a";
+    d31 [label="Doc 31 · think_off (between_tools, effort medium)\nsmoke 3 → piloto 180 → completo 4 653 pedidos\n1Y5N voto YES 0,286 → PARCIAL", fillcolor="#e3f3ec"];
+  }
+  f0 -> f1 -> f1b -> f2;
+  f2 -> d26 [label="por que a P3\ndiverge?", style=dashed];
+  f2 -> d27 [label="continuação\nexploratória"];
+  d27 -> d28 [label="dose maior"];
+  d28 -> d29 [label="usar o GLM direto", style=dashed];
+  d28 -> d30 [label="o viés é do\nthinking off?"];
+  d30 -> ext [label="pedido do orientador:\ntestar outro LLM"];
+  ext -> d31;
+}

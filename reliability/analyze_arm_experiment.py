@@ -67,7 +67,14 @@ def discover():
             continue                      # runs de 2 épocas do estudo anterior
         key = (arm, seed)
         if key in found:
-            raise RuntimeError(f"duas runs de {N_EPOCHS} épocas para {key}")
+            # Repetição da mesma run (evidência de reprodutibilidade) fica de fora
+            # em silêncio se a curva for idêntica; curvas diferentes é que são
+            # ambíguas. `20260906_215142_raw_seed42.json` é uma dessas repetições.
+            if [r["eval_loss"] for r in found[key]["evals"]] == \
+               [r["eval_loss"] for r in ev]:
+                continue
+            raise RuntimeError(f"duas runs de {N_EPOCHS} épocas para {key} "
+                               f"com curvas DIFERENTES")
         found[key] = {"path": path, "hist": hist, "evals": ev,
                       "train_end": "train_runtime" in hist[-1]}
     return found

@@ -30,8 +30,11 @@ from wordsegment import load as load_wordsegment_dictionary, segment
 
 from transformers import XLMRobertaModel, CLIPVisionModel
 
-from pyevall.evaluation import PyEvALLEvaluation
-from pyevall.utils.utils import PyEvALLUtils
+try:
+    from pyevall.evaluation import PyEvALLEvaluation
+    from pyevall.utils.utils import PyEvALLUtils
+except ImportError:  # só as métricas usam; permite importar a limpeza de texto num ambiente sem pyevall (Mac)
+    PyEvALLEvaluation = PyEvALLUtils = None
 
 # wordsegment precisa do dicionário de frequência de palavras carregado antes de segment() funcionar
 load_wordsegment_dictionary()

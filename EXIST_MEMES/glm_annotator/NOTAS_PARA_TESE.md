@@ -249,6 +249,87 @@ imagens ou aumentar o cache de encoder do vLLM.
 
 ---
 
+## 7A. Doc 27 — continuação exploratória: distância ao soft label do GLM
+
+**Estatuto:** continuação **exploratória**, aprovada pelo orientador em 2026-10-09 e declarada como motivada pela falha do G2 do doc 25 (`SPEC_27.md`). Apresentar sempre ao lado do doc 25, nunca no lugar dele.
+
+**Formulação do método:**
+
+> Em vez de descartar os memes em que as três paráfrases discordam, o GLM passa a fornecer um
+> soft label `p_GLM` (fração de YES entre as três paráfrases: 0, ⅓, ⅔ ou 1). O desvio de um
+> anotador num meme é `|1[voto = YES] − p_GLM|`, ponderado, como no doc 25, pelo consenso dos
+> outros anotadores do meme (`1 − H`). Nos memes em que o GLM é unânime, a fórmula coincide com
+> a do doc 25.
+
+**Pesos (F3′)** `[MEDIDO — config.json, annotator_weights.csv]`: 887 anotadores, `r_glm` de 0,021 a 1,0 (mediana 0,562); 5 memes sem referência (imagens recusadas pelo servidor).
+
+**Checagens (F4)** `[MEDIDO — reports/checks_summary.md, gate_decision.md]`:
+- G4 aprovado: 34,6% dos memes de treino mudam pelo menos meio voto; ρ(r_glm, r_peer) = 0,50.
+- **O peso mede sobretudo o limiar de YES do anotador:** ρ(D_glm, taxa de YES do anotador) = −0,676; ρ(D_glm, |limiar do anotador − limiar do GLM|) = 0,710. As 554 mudanças de rótulo duro vão todas para o YES ou desfazem empates: empate→YES 409, empate→NO 109, NO→YES 36, **YES→NO 0**.
+- Peso maior para mulheres e para faixas etárias mais altas (F 46+: 0,596; M 18–22: 0,461). `[HIPÓTESE]` reflexo do item anterior: esses grupos dão mais YES.
+- **A hesitação do GLM coincide com a ambiguidade humana** `[MEDIDO]`: nos memes em que as paráfrases discordam (2-1), 52,2% têm divisão humana 4-2 ou 3-3, contra 43,6% nos memes 3-0 (diferença +0,086, IC 95% [+0,049, +0,123]). Confirma a `[HIPÓTESE]` do §4: descartar esses memes, como fazia o doc 25, tirava justamente os memes informativos.
+- Os pesos são ruidosos: largura mediana do IC 95% do desvio por anotador = 0,456 (~17 memes incluídos por anotador).
+- Qualidade da referência: o GLM unânime contraria um meme unânime humano em 9,2% dos casos; concorda com a maioria humana em 70,7% (82,8% nos memes 6-0).
+
+**Retreino (F5)** `[MEDIDO — reports/f5_report.md; 3 seeds pareadas, estado primário = menor eval_loss (época 3 em todas), t pareado bilateral]`:
+
+| métrica | Δ médio (glmw − base) | seeds com o mesmo sinal | p |
+|---|---|---|---|
+| Task A ICM-Soft-Norm (primária) | +0,0074 | 3/3 | 0,107 |
+| `eval_loss` | +0,0093 (pior) | 3/3 | 0,105 |
+| Task A ICM-Norm hard | +0,0021 | não | 0,802 |
+
+**Critério pré-registrado não satisfeito** (p ≥ 0,05 e `eval_loss` pior). O braço de controle (`glmshift`, mesmo deslocamento para o YES sem ponderar anotadores) não rodou, pela regra fixada antes da F5.
+
+**Leitura para a tese:**
+
+> Usar um LLM multimodal como referência externa para ponderar anotadores não produziu ganho
+> detectável no modelo de memes. O diagnóstico explica o porquê: o peso de cada anotador refletiu
+> sobretudo a distância entre o limiar de YES dele e o do GLM, que é inclinado ao YES, de modo que
+> a ponderação deslocou os labels de treino para o YES em vez de selecionar anotadores mais
+> fiáveis. O padrão nas três seeds (ICM-Soft-Norm um pouco acima e `eval_loss` um pouco pior,
+> sempre no mesmo sentido) é compatível com essa mudança de calibração, e não com uma
+> representação melhor. Junto com o MACE (Δ = −0,0025, p = 0,164), é a segunda forma de
+> ponderar anotadores, uma com referência interna e outra externa, sem efeito detectável no
+> regime do EXIST.
+
+`[HIPÓTESE]` A leitura "deslocamento de calibração" é inferida da checagem (b) e do padrão loss↑/ICM↑. O controle que a testaria não rodou, porque o critério do GLMW não foi satisfeito.
+
+`[LIMITAÇÃO]` Três seeds (df = 2): um Δ de +0,007 com sinal consistente não é detectável a α = 0,05. Registrar como "efeito não detectado com 3 seeds", não como "efeito zero". Acrescentar seeds agora seria rodar de novo mirando o resultado, o que o pré-registro proíbe.
+
+`[MEDIDO]` Determinismo: três execuções de `glmbase` seed 7 deram `eval_loss` idêntica época a época.
+
+## 7B. Doc 28 — dose maior: pesos r⁴
+
+**Estatuto:** exploratório, motivado pelo nulo do doc 27. O objetivo declarado foi testar uma intervenção com efeito maior, em qualquer direção (`SPEC_28.md`). Mesmo `r_glm` do doc 27, elevado à 4ª potência. Labels de treino: deslocamento médio de +0,120 para o YES (2,2× o doc 27); 62,5% dos memes de treino mudam pelo menos meio voto.
+
+**Desenho:** triagem com 1 seed (42) e limites fixados antes (|Δ| ≥ 0,03 hard, ≥ 0,02 soft, ≥ 0,03 loss), e só depois as seeds 7 e 2025. O BASE (`glmbase`) do doc 27 foi reaproveitado, porque o treino é determinístico.
+
+**Resultado** `[MEDIDO — reports/doc28_screen.md, reports/f5_report_glmw4.md; estado primário = menor eval_loss]`:
+
+| métrica | Δ médio (glmw4 − base) | seeds com o mesmo sinal | p |
+|---|---|---|---|
+| Task A ICM-Soft-Norm (primária) | −0,0247 | 3/3 | 0,209 |
+| Task A ICM-Norm hard | −0,0462 | 3/3 | 0,102 |
+| `eval_loss` | **+0,0988 (pior)** | 3/3 | **0,029** |
+
+No estado final (secundário), o ICM-Soft-Norm da Task A cai −0,0465 nas 3 seeds (p = 0,002), e o hard fica sem sinal (−0,006).
+
+**Leitura para a tese:**
+
+> Aumentar a dose da ponderação pelo GLM não revelou um ganho escondido pelo tamanho pequeno do
+> doc 27: o efeito trocou de sinal e ficou maior. Com r⁴, o modelo piora na `eval_loss` nas três
+> seeds (p = 0,029), e o ICM-Soft-Norm da Task A cai em todas elas. A tendência levemente positiva
+> do doc 27 (+0,007) não sobrevive a uma dose maior. Isso reforça a leitura de que a ponderação
+> pelo GLM desloca a calibração para o YES, e não seleciona anotadores mais fiáveis: quanto mais
+> forte o deslocamento, mais os labels de treino se afastam dos labels humanos da validação.
+
+`[LIMITAÇÃO]` Parte da piora da `eval_loss` é quase mecânica: o modelo treina para uma distribuição de labels deslocada e é avaliado contra os labels originais. O resultado mostra que esse deslocamento custa caro, mas não isola "anotadores piores" de "mais YES" (o controle `glmshift` foi desenhado para o doc 27 e não rodou).
+
+`[LIMITAÇÃO]` Na seed 42, a época escolhida (2) quase empatou com a 4 (diferença de 0,0007 na loss). Por isso, os Δ da seed 42 no ICM (−0,078 hard) não devem ser citados isolados como tamanho do efeito.
+
+`[LIMITAÇÃO]` Sete métricas por estado, sem correção para comparações múltiplas. A `eval_loss` era uma condição declarada do critério, e não uma métrica escolhida depois.
+
 ## 8. Disciplina metodológica (para o capítulo de método)
 
 `[MEDIDO]` Práticas aplicadas neste experimento:
@@ -280,6 +361,8 @@ imagens ou aumentar o cache de encoder do vLLM.
 | `EXIST_MEMES/glm_reference/raw/think_on.jsonl` · `think_off.jsonl` | uma linha por chamada, com resposta, raciocínio, parâmetros e hashes |
 | `EXIST_MEMES/glm_reference/reports/pilot_summary.md` | métricas do piloto e regra de escolha (§3) |
 | `EXIST_MEMES/glm_reference/reports/reference_summary.md` · `glm_votes.csv` | referência completa e portão G2 (§4) |
+| `EXIST_MEMES/glm_annotator/SPEC_27.md` | continuação exploratória, adendos §16A–§16C e resultado (§7A) |
+| `EXIST_MEMES/glm_reference/reports/checks_summary.md` · `gate_decision.md` · `f5_report.md` | F4 e F5 do doc 27 (§7A) |
 
 ---
 

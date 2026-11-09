@@ -77,8 +77,13 @@ def load_json(p):
 
 
 def write_json(p, obj):
-    Path(p).parent.mkdir(parents=True, exist_ok=True)
-    Path(p).write_text(json.dumps(obj, ensure_ascii=False, indent=1), encoding="utf-8")
+    """Troca o arquivo de uma vez (tmp + replace): uma queda da montagem no meio não deixa o
+    config.json ou um arquivo de labels pela metade."""
+    p = Path(p)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_name(p.name + ".tmp")
+    tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=1), encoding="utf-8")
+    tmp.replace(p)
 
 
 def sha256_file(p) -> str:

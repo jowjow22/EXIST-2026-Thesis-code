@@ -227,6 +227,26 @@ Seção nova datada; as seções acima não foram editadas. Nada aqui muda a fó
 
 Testado com votos do GLM **sintéticos e aleatórios**, a comparação crua "proporção de 4-2/3-3 nos memes 2-1 > nos 3-0" deu "mais" por puro ruído (0,479 contra 0,455). Para que a leitura do P2 não confunda ruído com efeito, a checagem (i) reporta a **diferença com IC 95%** (aproximação normal para duas proporções) e só diz "mais" quando o intervalo exclui zero. Se o IC incluir zero, a leitura é "não diferem", e a `[HIPÓTESE]` da §0 não se sustenta. Continua descritiva e fora do G4.
 
+## 16C. Adendo de 2026-10-09 — braço de controle `glmshift` (depois da F4, antes da F5)
+
+Seção nova datada. A F4 rodou e o G4 autorizou o retreino (`share_moved` 0,3461; ρ(r_glm, r_peer) 0,5008). A checagem (b) mostrou que o peso mede sobretudo o limiar de YES de cada anotador: ρ(D_glm, taxa de YES) = −0,676, e ρ(D_glm, |limiar do anotador − limiar do GLM|) = 0,710. As 554 mudanças de rótulo duro vão todas para o YES ou desfazem empates, nenhuma de YES para NO. Um ganho do GLMW na F5 poderia vir só de **deslocar os labels de treino para o YES**, e não de identificar anotadores melhores.
+
+**Definição do controle (congelada antes de qualquer run da F5):**
+- **braço `glmshift`:** em cada meme de treino **não unânime**, `p_ctrl = clip(p_old + Δ̄, 0, 1)`, com `Δ̄` = média de `(p_glmw − p_old)` sobre esses memes. Memes unânimes e validação: iguais ao `raw`;
+- é o mesmo deslocamento médio para o YES que o GLMW produziu, **sem ponderar anotador nenhum**;
+- gerado por `control_glmshift.py`; o SHA-256 e o `Δ̄` vão para `config.json` (`runtime.control_glmshift`). O script recusa sobrescrever o arquivo.
+
+**Quando roda (regra fixada agora):** o controle **só** é treinado se o GLMW satisfizer o critério de sucesso no estado primário (Δ médio de ICM-Soft-Norm > 0, p < 0,05 bilateral e `eval_loss` sem piora, na época de menor `eval_loss`). Se o GLMW der nulo, não há efeito a explicar, e o controle não roda. Mesmas seeds (42, 7, 2025), 15 épocas, mesmo notebook (`ARM = 'glmshift'`).
+
+**Leitura, se rodar (estado primário, t pareado bilateral):**
+
+| Resultado | Leitura |
+|---|---|
+| Δ(glmw − glmshift) > 0, p < 0,05 | o GLMW ganha além do deslocamento para o YES: há efeito da ponderação por anotador |
+| caso contrário | o ganho do GLMW **não se distingue** de um simples deslocamento de calibração para o YES |
+
+**Restrição:** o ambiente da VM (bibliotecas, GPU, notebook) não pode mudar entre as runs da F5 e as do controle. Se mudar, o controle exige retreinar o `glmbase` também.
+
 ## 17. Resultado
 
 *(preencher depois de rodar, como seção datada; não editar as seções acima)*
@@ -315,3 +335,35 @@ Conta de `D_peer` de F: m2 (outros 5/5 YES → p = 1, d = 1, w = 1); m3 (4/5 →
 6. m4 (3-3) vira YES depois da ponderação (0,6313), uma mudança de rótulo duro na checagem (d).
 7. **Caso particular do doc 25:** se todo `p_GLM` ∈ {0, 1}, os `D_a` são exatamente os do Apêndice A do doc 25 (0,0217 · 0,5000 · 0,5000 · 0,5473 · 0,3558 · 0,8246, com m3 → 0 e m4 → 1).
 8. `d ∈ [0, 1]`; com `p_GLM = 0,5`, qualquer voto tem `d = 0,5`.
+
+---
+
+## Resultado de 2026-10-11 (preenche o §17) — critério não satisfeito; controle não roda
+
+Seção datada, como manda o §17; nada acima foi editado.
+
+| Etapa | Resultado |
+|---|---|
+| G2′ | aprovado (parse en 0,9983 · es 0,9988) |
+| F3′ | 887 anotadores, `r_glm` de 0,021 a 1,0 (mediana 0,562); 5 memes sem referência; validação idêntica ao `raw` |
+| G4 | aprovado: `share_moved` 0,3461; ρ(r_glm, r_peer) 0,5008 |
+| F5 | 6 runs (`glmbase`/`glmw` × seeds 42, 7, 2025), 15 épocas; E = época 3 nas 6 runs |
+
+**F5, estado primário (E = argmin `eval_loss`), t pareado bilateral, df = 2** (`reports/f5_report.md`):
+
+| métrica | Δ 42 | Δ 7 | Δ 2025 | média | t | p |
+|---|---|---|---|---|---|---|
+| A ICM-Soft-Norm soft (primária) | +0,0040 | +0,0057 | +0,0126 | **+0,0074** | 2,81 | 0,107 |
+| A ICM-Norm hard | +0,0160 | −0,0079 | −0,0019 | +0,0021 | 0,29 | 0,802 |
+| `eval_loss` (↓ melhor) | +0,0148 | +0,0096 | +0,0035 | **+0,0093** (pior) | 2,83 | 0,105 |
+
+**Critério: não satisfeito.** Falham duas condições: p = 0,107 ≥ 0,05, e o `eval_loss` piorou nas 3 seeds. Pela regra do §16C, **o controle `glmshift` não roda** (o arquivo fica congelado, sem uso). Leitura (§16A, P4): **efeito não detectado com 3 seeds**, não "efeito zero".
+
+**Descritivo (sem decisão):**
+- O ICM-Soft-Norm da Task A subiu nas **3 seeds** (mesmo sinal), e o `eval_loss` piorou nas **3 seeds**. Com df = 2, nenhum dos dois atinge p < 0,05.
+- No estado final (secundário), o sinal se inverte no ICM-Soft-Norm (−0,0052, p = 0,237), e o `eval_loss` fica pior (+0,0432, p = 0,038).
+- Tasks B e C sem sinal (|Δ| ≤ 0,005, p > 0,4): sem dano colateral detectável.
+- Treino determinístico confirmado: três execuções de `glmbase_seed7` (uma interrompida na época 11) deram `eval_loss` idêntica época a época.
+
+Nada aqui autoriza mais seeds, outra variante ou um ajuste do mapeamento D→r (§11, §15).
+
